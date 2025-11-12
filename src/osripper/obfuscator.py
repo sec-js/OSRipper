@@ -7,14 +7,12 @@ import marshal
 import py_compile
 import random
 import secrets
-a=random.randint(50,70)
-randint = UltimateRandomNumberlow2 = secrets.randbelow(2)
-if sys.version_info[0]==2:
-    _input = "raw_input('%s')"
-elif sys.version_info[0]==3:
-    _input = "input('%s')"
 
+# Configuration
+a = random.randint(50, 70)
+_input = "raw_input('%s')" if sys.version_info[0] == 2 else "input('%s')"
 
+# Encoding functions
 zlb = lambda in_ : zlib.compress(in_)
 b16 = lambda in_ : base64.b16encode(in_)
 b32 = lambda in_ : base64.b32encode(in_)
@@ -33,29 +31,28 @@ class FileSize:
             print('\n')
             print(" [-] Encoded File Size : %s\n" % self.datas(dts))
 
-def Encode(data,output):
+def Encode(data, output):
+    """
+    Encode data with multiple layers of base64/zlib compression.
+    Fixed version that doesn't overwrite decoders.
+    """
     loop = int(eval(str(a)))
-
-    x1 = "b32(zlb(data.encode('utf8')))[::-1]"
-    heading1 = "_ = lambda __ : __import__('zlib').decompress(__import__('base64').b32decode(__[::-1]));"
-    x2 = "b64(zlb(data.encode('utf8')))[::-1]"
-    heading2 = "_ = lambda __ : __import__('zlib').decompress(__import__('base64').b64decode(__[::-1]));"
-
     
+    # Use b64 encoding consistently to avoid decoder conflicts
+    x_encode = "b64(zlb(data.encode('utf8')))[::-1]"
+    decoder = "_ = lambda __ : __import__('zlib').decompress(__import__('base64').b64decode(__[::-1]));"
+    
+    # Apply encoding layers
     for x in range(loop):
         try:
-            data = "exec((_)(%s))" % repr(eval(x1))
+            data = "exec((_)(%s))" % repr(eval(x_encode))
         except TypeError as s:
             sys.exit(" TypeError : " + str(s))
-    ab=(heading1 + data)
-    for x in range(loop):
-        try:
-            data = "exec((_)(%s))" % repr(eval(x2))
-        except TypeError as s:
-            sys.exit(" TypeError : " + str(s))
-    abc=(heading2 + ab)
+    
+    # Write final encoded payload
+    final_code = decoder + data
     with open(output, 'w') as f:
-        f.write(abc)
+        f.write(final_code)
         f.close()
 
 def SEncode(data,output):

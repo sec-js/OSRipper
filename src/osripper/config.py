@@ -218,12 +218,12 @@ class ConfigManager:
                                if not k.startswith('#') and k != ''}
                 yaml.dump(clean_config, f, default_flow_style=False, indent=2)
             
-            print(f"✅ Sample configuration created: {file_path}")
-            print("📝 Edit this file to customize OSRipper settings")
+            print(f"[+] Sample configuration created: {file_path}")
+            print("[i] Edit this file to customize OSRipper settings")
             return True
             
         except Exception as e:
-            print(f"❌ Failed to create sample config: {e}")
+            print(f"[!] Failed to create sample config: {e}")
             return False
     
     def validate_config(self) -> bool:
@@ -335,8 +335,8 @@ if __name__ == "__main__":
     elif args.validate:
         config_mgr = ConfigManager(args.config)
         if config_mgr.validate_config():
-            print("✅ Configuration is valid")
+            print("[+] Configuration is valid")
         else:
-            print("❌ Configuration has errors")
+            print("[!] Configuration has errors")
     else:
         parser.print_help()

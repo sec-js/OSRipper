@@ -5,3 +5,6 @@ img/.DS_Store
 build/*
 dist/*
 ocr.py
+tmp
+/src/osripper.egg-info
+/results

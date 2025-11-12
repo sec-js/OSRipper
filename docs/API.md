@@ -342,7 +342,7 @@ def generate_from_template(template_name, **kwargs):
 Multi-layer obfuscation system.
 
 ```python
-from obfuscator_enhanced import AdvancedObfuscator
+from osripper.obfuscator_enhanced import AdvancedObfuscator
 
 # Initialize obfuscator
 obfuscator = AdvancedObfuscator()
@@ -367,7 +367,7 @@ if success:
 #### Custom Obfuscation
 
 ```python
-from obfuscator_enhanced import AdvancedObfuscator
+from osripper.obfuscator_enhanced import AdvancedObfuscator
 
 class CustomObfuscator(AdvancedObfuscator):
     def add_custom_evasion(self, code):
@@ -412,7 +412,7 @@ custom_obfuscator.obfuscate_file("payload.py", "obfuscated.py")
 ### Encoding Functions
 
 ```python
-from obfuscator_enhanced import AdvancedObfuscator
+from osripper.obfuscator_enhanced import AdvancedObfuscator
 
 obfuscator = AdvancedObfuscator()
 
@@ -658,7 +658,7 @@ Complete integration example:
 ```python
 from config import ConfigManager
 from logger import get_logger
-from obfuscator_enhanced import AdvancedObfuscator
+from osripper.obfuscator_enhanced import AdvancedObfuscator
 
 class CustomPayloadGenerator:
     """Custom payload generator with full integration."""

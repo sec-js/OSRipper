@@ -162,49 +162,49 @@ class OSRipperLogger:
     
     def operation_start(self, operation: str, **kwargs):
         """Log operation start."""
-        self.info(f"🚀 Starting operation: {operation}", operation=operation, **kwargs)
+        self.info(f"[*] Starting operation: {operation}", operation=operation, **kwargs)
     
     def operation_complete(self, operation: str, **kwargs):
         """Log operation completion."""
-        self.info(f"✅ Completed operation: {operation}", operation=operation, **kwargs)
+        self.info(f"[+] Completed operation: {operation}", operation=operation, **kwargs)
     
     def operation_failed(self, operation: str, error: str, **kwargs):
         """Log operation failure."""
-        self.error(f"❌ Failed operation: {operation} - {error}", operation=operation, error=error, **kwargs)
+        self.error(f"[!] Failed operation: {operation} - {error}", operation=operation, error=error, **kwargs)
     
     def payload_generated(self, payload_type: str, target: str, **kwargs):
         """Log payload generation."""
-        self.info(f"🎯 Generated {payload_type} payload: {target}", 
+        self.info(f"[+] Generated {payload_type} payload: {target}", 
                  operation="payload_generation", payload_type=payload_type, target=target, **kwargs)
     
     def connection_attempt(self, host: str, port: int, **kwargs):
         """Log connection attempt."""
-        self.info(f"🔌 Connection attempt: {host}:{port}", 
+        self.info(f"[*] Connection attempt: {host}:{port}", 
                  operation="connection", target=f"{host}:{port}", **kwargs)
     
     def connection_established(self, host: str, port: int, **kwargs):
         """Log successful connection."""
-        self.info(f"✅ Connection established: {host}:{port}", 
+        self.info(f"[+] Connection established: {host}:{port}", 
                  operation="connection", target=f"{host}:{port}", **kwargs)
     
     def security_event(self, event_type: str, details: str, **kwargs):
         """Log security-related events."""
-        self.warning(f"🛡️  Security event [{event_type}]: {details}", 
+        self.warning(f"[!] Security event [{event_type}]: {details}", 
                     operation="security", event_type=event_type, **kwargs)
     
     def obfuscation_applied(self, layers: int, techniques: list, **kwargs):
         """Log obfuscation application."""
-        self.info(f"🎭 Applied {layers} obfuscation layers: {', '.join(techniques)}", 
+        self.info(f"[+] Applied {layers} obfuscation layers: {', '.join(techniques)}", 
                  operation="obfuscation", layers=layers, techniques=techniques, **kwargs)
     
     def compilation_started(self, compiler: str, target: str, **kwargs):
         """Log compilation start."""
-        self.info(f"🔨 Starting compilation with {compiler}: {target}", 
+        self.info(f"[*] Starting compilation with {compiler}: {target}", 
                  operation="compilation", compiler=compiler, target=target, **kwargs)
     
     def compilation_finished(self, output_file: str, size_kb: float, **kwargs):
         """Log compilation completion."""
-        self.info(f"✅ Compilation finished: {output_file} ({size_kb:.1f} KB)", 
+        self.info(f"[+] Compilation finished: {output_file} ({size_kb:.1f} KB)", 
                  operation="compilation", output=output_file, size_kb=size_kb, **kwargs)
     
     def get_log_stats(self) -> Dict[str, Any]:
@@ -241,7 +241,7 @@ class OSRipperLogger:
                     self.error(f"Failed to delete old log file {log_file}: {e}")
         
         if cleaned_files:
-            self.info(f"🧹 Cleaned up {len(cleaned_files)} old log files")
+            self.info(f"[+] Cleaned up {len(cleaned_files)} old log files")
         
         return cleaned_files
 
