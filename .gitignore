@@ -8,3 +8,8 @@ ocr.py
 tmp
 /src/osripper.egg-info
 /results
+*.crt
+*.key
+c2_server.crt
+c2_server.key
+c2_sessions.db

