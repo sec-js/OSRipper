@@ -106,7 +106,7 @@ def validate_ip(ip):
         # Also use socket.inet_aton for additional validation
         socket.inet_aton(ip)
         return True
-    except (socket.error, ValueError):
+    except (OSError, ValueError):
         return False
 
 def get_user_input(prompt, validator=None, error_msg="Invalid input"):
@@ -148,7 +148,11 @@ def listen(host, port):
         if command.lower() == "exit":
             break
         output = client_socket.recv(BUFFER_SIZE).decode()
-        results, cwd = output.split(SEPARATOR)
+        parts = output.split(SEPARATOR, 1)
+        if len(parts) != 2:
+            print("[!] Invalid response from client")
+            continue
+        results, cwd = parts
         print(results)
     
     client_socket.close()

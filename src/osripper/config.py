@@ -118,8 +118,10 @@ class ConfigManager:
         target_file = file_path or self.config_file or "osripper.yml"
         
         try:
-            os.makedirs(os.path.dirname(target_file), exist_ok=True)
-            
+            dirname = os.path.dirname(target_file)
+            if dirname:
+                os.makedirs(dirname, exist_ok=True)
+
             with open(target_file, 'w') as f:
                 if target_file.endswith(('.yml', '.yaml')):
                     yaml.dump(self.config, f, default_flow_style=False, indent=2)
