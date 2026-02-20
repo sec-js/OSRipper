@@ -223,7 +223,7 @@ def validate_args(args):
             print("[!] Both --cert and --key must be provided together")
             return False
     
-    if args.icon and not os.path.isfile(args.icon):
+    if hasattr(args, 'icon') and args.icon and not os.path.isfile(args.icon):
         print("[!] Icon file not found")
         return False
     
