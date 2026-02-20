@@ -14,3 +14,4 @@ c2_server.crt
 c2_server.key
 c2_sessions.db
 /wiki
+/webroot

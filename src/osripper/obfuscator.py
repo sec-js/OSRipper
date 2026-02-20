@@ -7,6 +7,7 @@ import marshal
 import py_compile
 import random
 import secrets
+import string
 
 # Configuration
 a = random.randint(50, 70)
@@ -18,6 +19,41 @@ b16 = lambda in_ : base64.b16encode(in_)
 b32 = lambda in_ : base64.b32encode(in_)
 b64 = lambda in_ : base64.b64encode(in_)
 mar = lambda in_ : marshal.dumps(compile(in_,'<x>','exec'))
+
+
+def _random_name(length=2):
+    """Return a random identifier (letter + alnum) to avoid fixed decoder signatures."""
+    return ''.join(secrets.choice(string.ascii_lowercase) for _ in range(length))
+
+
+def _random_decoder_b64():
+    """Build a decoder line with random variable names and one of several equivalent forms."""
+    dec_var = _random_name(random.randint(2, 4))
+    arg_var = _random_name(random.randint(2, 4))
+    while arg_var == dec_var:
+        arg_var = _random_name(random.randint(2, 4))
+    style = random.randint(0, 2)
+    if style == 0:
+        # Lambda with __import__ inline
+        return (
+            f"{dec_var} = lambda {arg_var} : __import__('zlib').decompress(__import__('base64').b64decode({arg_var}[::-1]));",
+            dec_var,
+        )
+    if style == 1:
+        # Two-step: modules then lambda
+        z = _random_name(1)
+        b = _random_name(1)
+        return (
+            f"{z}=__import__('zlib');{b}=__import__('base64');{dec_var}=lambda {arg_var}:{z}.decompress({b}.b64decode({arg_var}[::-1]));",
+            dec_var,
+        )
+    # getattr form
+    m = _random_name(1)
+    return (
+        f"{m}=__import__('base64');{dec_var}=lambda {arg_var}:__import__('zlib').decompress(getattr({m},'b64decode')({arg_var}[::-1]));",
+        dec_var,
+    )
+
 
 class FileSize:
     def datas(self,z):
@@ -34,23 +70,17 @@ class FileSize:
 def Encode(data, output):
     """
     Encode data with multiple layers of base64/zlib compression.
-    Fixed version that doesn't overwrite decoders.
+    Uses randomized decoder variable names to reduce static signatures.
     """
     loop = int(eval(str(a)))
-    
-    # Use b64 encoding consistently to avoid decoder conflicts
+    decoder_line, dec_var = _random_decoder_b64()
     x_encode = "b64(zlb(data.encode('utf8')))[::-1]"
-    decoder = "_ = lambda __ : __import__('zlib').decompress(__import__('base64').b64decode(__[::-1]));"
-    
-    # Apply encoding layers
     for x in range(loop):
         try:
-            data = "exec((_)(%s))" % repr(eval(x_encode))
+            data = "exec((%s)(%s))" % (dec_var, repr(eval(x_encode)))
         except TypeError as s:
             sys.exit(" TypeError : " + str(s))
-    
-    # Write final encoded payload
-    final_code = decoder + data
+    final_code = decoder_line + "\n" + data
     with open(output, 'w') as f:
         f.write(final_code)
         f.close()
@@ -69,16 +99,26 @@ def SEncode(data,output):
         f.close()
     py_compile.compile(output,output)
 
-def MainMenu(file):
-
+def MainMenu(file, random_suffix=False):
+    """
+    Obfuscate a Python file. Optionally use a random output suffix to reduce filename signatures.
+    Returns the output filename (basename).
+    """
     try:
         data = open(file).read()
     except IOError:
         sys.exit("\n File Not Found!")
-    output = file.lower().replace('.py', '') + '_or.py'
-    Encode(data,output)
+    base = file.lower().replace('.py', '')
+    if random_suffix:
+        output = base + "_" + secrets.token_hex(2) + ".py"
+    else:
+        output = base + "_or.py"
+    Encode(data, output)
     FileSize(output)
+    return output
 
 
 if __name__ == "__main__":
-    MainMenu()
+    if len(sys.argv) < 2:
+        sys.exit("Usage: python obfuscator.py <file.py>")
+    MainMenu(sys.argv[1])

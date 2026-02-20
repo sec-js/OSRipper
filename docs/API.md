@@ -1,6 +1,6 @@
 # OSRipper API Documentation
 
-This document provides comprehensive API documentation for OSRipper v0.3.1, enabling developers to integrate and extend the framework.
+This document provides comprehensive API documentation for OSRipper v0.4.2, enabling developers to integrate and extend the framework.
 
 ## Table of Contents
 
@@ -724,4 +724,4 @@ payload_file = generator.generate("reverse_tcp",
                                 port=4444)
 ```
 
-This completes the comprehensive API documentation for OSRipper v0.3.1. The API provides extensive customization and extension capabilities for advanced users and developers.
+This completes the comprehensive API documentation for OSRipper v0.4.2. The API provides extensive customization and extension capabilities for advanced users and developers.

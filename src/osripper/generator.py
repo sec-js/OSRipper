@@ -711,8 +711,8 @@ class Generator:
         self.obfuscated_file = None
         self.binary_file = None
         
-        # Results directory
-        self.results_dir = os.path.join(os.getcwd(), "results")
+        # Results directory (absolute so it's correct regardless of cwd later)
+        self.results_dir = os.path.abspath(os.path.join(os.getcwd(), "results"))
         
     def _log(self, message):
         """Print message unless in quiet mode."""
@@ -729,14 +729,15 @@ class Generator:
             print(f"[!] Failed to create temp workspace: {e}")
             return False
     
-    def obfuscate(self, enhanced=False):
+    def obfuscate(self, enhanced=False, random_suffix=False):
         """
         Obfuscate the payload using the obfuscator module.
-        
+        Runs in the source file's directory so output is always next to the source.
+
         Args:
             enhanced: If True, use enhanced obfuscator with anti-debug, VM detection, etc.
-                     If False, use basic multi-layer encoding obfuscator.
-        
+            random_suffix: If True, use a random output filename suffix to reduce AV filename signatures.
+
         Returns:
             bool: True if successful, False otherwise
         """
@@ -745,39 +746,37 @@ class Generator:
                 self._log("[*] Obfuscating payload with enhanced obfuscator (anti-debug, VM detection, etc.)...")
             else:
                 self._log("[*] Obfuscating payload with basic obfuscator...")
-            
-            # Determine source file path
+            if random_suffix:
+                self._log("[*] Using random output filename suffix for evasion")
+            # Determine source file path (absolute so we know its directory)
             if self.obfuscated_file:
                 source = self.obfuscated_file
             else:
                 source = self.source_file
-            
-            # Ensure source exists
-            if not os.path.exists(source):
-                print(f"[!] Source file not found: {source}")
+            source_abs = os.path.abspath(source)
+            source_dir = os.path.dirname(source_abs)
+            source_basename = os.path.basename(source_abs)
+            if not os.path.exists(source_abs):
+                print(f"[!] Source file not found: {source_abs}")
                 return False
-            
-            # Run appropriate obfuscator
-            if enhanced:
-                obfuscator_enhanced.MainMenu(source)
-            else:
-                obfuscator.MainMenu(source)
-            
-            # Check for obfuscated output
-            base_name = os.path.basename(source)
-            if base_name.endswith('.py'):
-                base_name = base_name[:-3]
-            
-            obfuscated_name = f"{base_name}_or.py"
-            
-            if os.path.exists(obfuscated_name):
-                self.obfuscated_file = obfuscated_name
+            orig_cwd = os.getcwd()
+            try:
+                if source_dir:
+                    os.chdir(source_dir)
+                if enhanced:
+                    obfuscated_name = obfuscator_enhanced.MainMenu(source_basename, random_suffix=random_suffix)
+                else:
+                    obfuscated_name = obfuscator.MainMenu(source_basename, random_suffix=random_suffix)
+            finally:
+                os.chdir(orig_cwd)
+            obfuscated_abs = os.path.join(source_dir, obfuscated_name)
+            if os.path.exists(obfuscated_abs):
+                self.obfuscated_file = obfuscated_abs
                 self.obfuscated = True
                 self._log(f"[+] Payload obfuscated: {obfuscated_name}")
                 return True
-            else:
-                print("[!] Obfuscation failed - output file not found")
-                return False
+            print("[!] Obfuscation failed - output file not found")
+            return False
                 
         except Exception as e:
             print(f"[!] Obfuscation error: {e}")
@@ -927,9 +926,10 @@ class Generator:
             # Create results directory
             os.makedirs(self.results_dir, exist_ok=True)
             
-            # Move obfuscated file if it exists
+            # Move obfuscated file if it exists (use absolute paths for robustness)
             if self.obfuscated_file and os.path.exists(self.obfuscated_file):
                 dest = os.path.join(self.results_dir, os.path.basename(self.obfuscated_file))
+                dest = os.path.abspath(dest)
                 shutil.copy2(self.obfuscated_file, dest)
                 self._log(f"[+] Moved obfuscated file to: {dest}")
                 
@@ -988,22 +988,23 @@ class Generator:
             print(f"[!] Cleanup error: {e}")
             return False
     
-    def generate(self, obfuscate=True, compile_binary=True, enhanced_obfuscation=False):
+    def generate(self, obfuscate=True, compile_binary=True, enhanced_obfuscation=False, randomize_output=False):
         """
         Main orchestrator method that runs all generation steps.
-        
+
         Args:
             obfuscate: If True, obfuscate the payload
             compile_binary: If True, compile to binary
             enhanced_obfuscation: If True, use enhanced obfuscator (anti-debug, VM detection, etc.)
-        
+            randomize_output: If True, use random obfuscated filename suffix to reduce AV filename signatures.
+
         Returns:
             bool: True if successful, False otherwise
         """
         try:
             # Obfuscation step
             if obfuscate:
-                if not self.obfuscate(enhanced=enhanced_obfuscation):
+                if not self.obfuscate(enhanced=enhanced_obfuscation, random_suffix=randomize_output):
                     print("[!] Obfuscation failed")
                     return False
             

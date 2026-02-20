@@ -47,7 +47,7 @@ class ConfigManager:
         """Load default configuration."""
         return {
             "general": {
-                "version": "0.3.1",
+                "version": "0.4.2",
                 "output_dir": "dist",
                 "temp_dir": "temp",
                 "log_level": "INFO",

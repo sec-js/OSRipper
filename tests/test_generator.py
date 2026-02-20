@@ -273,10 +273,10 @@ class TestGeneratorClass:
             # Create expected obfuscated file
             obfuscated_file = os.path.join(tmpdir, "test_or.py")
             
-            def mock_main_menu(source):
-                # Simulate obfuscator creating the _or.py file
+            def mock_main_menu(source, random_suffix=False):
                 with open(obfuscated_file, 'w') as f:
                     f.write("obfuscated code")
+                return "test_or.py"
             
             mock_obfuscator.MainMenu.side_effect = mock_main_menu
             
@@ -320,8 +320,9 @@ class TestGeneratorClass:
             
             generator = Generator(source_file, quiet=True)
             
-            # Create a fake binary in the expected location
+            # Create a fake binary in the expected location (tmp_dir may not exist yet)
             def create_fake_binary(*args, **kwargs):
+                os.makedirs(generator.tmp_dir, exist_ok=True)
                 binary_path = os.path.join(generator.tmp_dir, "test.bin")
                 with open(binary_path, 'w') as f:
                     f.write("fake binary")
@@ -412,9 +413,10 @@ class TestGeneratorClass:
             # Mock obfuscator
             obfuscated_file = os.path.join(tmpdir, "test_or.py")
             
-            def mock_main_menu(source):
+            def mock_main_menu(source, random_suffix=False):
                 with open(obfuscated_file, 'w') as f:
                     f.write("obfuscated")
+                return "test_or.py"
             
             mock_obfuscator.MainMenu.side_effect = mock_main_menu
             

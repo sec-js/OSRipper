@@ -1,4 +1,4 @@
-# OSRipper v0.3.2
+# OSRipper v0.4.2
 
 <div align="center">
 

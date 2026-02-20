@@ -1,6 +1,6 @@
 # OSRipper Usage Guide
 
-This comprehensive guide covers all aspects of using OSRipper v0.3.1 for payload generation and red team operations.
+This comprehensive guide covers all aspects of using OSRipper v0.4.2 for payload generation and red team operations.
 
 ## Table of Contents
 
@@ -53,7 +53,7 @@ The interactive mode provides a user-friendly menu system for payload generation
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                           🏴‍☠️ OSRipper v0.3.1 Menu 🏴‍☠️                           │
+│                           🏴‍☠️ OSRipper v0.4.2 Menu 🏴‍☠️                           │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │  1. 🔗 Create Bind Backdoor                                                 │
 │  2. 🔐 Create Encrypted TCP Meterpreter (RECOMMENDED)                      │
@@ -436,6 +436,14 @@ Payload detected by antivirus
 - Test with different compilers
 - Add custom anti-detection code
 
+#### 6. Results directory empty / “Where are my files?”
+Output files are written to a **`results`** directory under **the directory you run the command from** (current working directory), e.g. `./results/` → full path like `/home/you/project/results/`.
+
+**If the results folder is empty**:
+- Run the command again from the **same directory** you used when you saw “Moved obfuscated file to: …” (that path is `./results/` for that run).
+- Check both the path printed in the log and `./results` in your current shell: `ls -la results` (or `ls -la /path/you/ran/from/results`).
+- If you run from a different directory, a new `results` folder is created there; previous outputs stay in the old run’s `results`.
+
 ### Debug Mode
 
 Enable verbose logging for troubleshooting:
@@ -553,4 +561,4 @@ compilation:
   strip_debug: true
 ```
 
-This completes the comprehensive usage guide for OSRipper v0.3.1. For additional help, consult the API documentation and example scripts in the `examples/` directory.
+This completes the comprehensive usage guide for OSRipper v0.4.2. For additional help, consult the API documentation and example scripts in the `examples/` directory.
