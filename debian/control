@@ -13,6 +13,9 @@ Build-Depends:
  python3-psutil,
  python3-flask,
  python3-cryptography,
+ python3-ordered-set,
+ python3-pyinstaller,
+ python3-zstandard,
 Standards-Version: 4.6.2
 Homepage: https://github.com/NoahOksuz/OSRipper
 Vcs-Browser: https://github.com/NoahOksuz/OSRipper
@@ -28,6 +31,9 @@ Depends:
  python3-psutil,
  python3-cryptography,
  python3-flask,
+ python3-ordered-set,
+ python3-pyinstaller,
+ python3-zstandard,
  ${misc:Depends},
 Description: Advanced payload generator and crypter (FUD backdoors)
  OSRipper generates bind shells, reverse TCP payloads, and custom
