@@ -9,6 +9,13 @@ import shutil
 from unittest.mock import patch, MagicMock, call
 from pathlib import Path
 
+# Skip compilation tests when optional deps (nuitka/sandboxed) are not installed
+try:
+    import sandboxed  # noqa: F401
+    HAS_COMPILE_DEPS = True
+except ImportError:
+    HAS_COMPILE_DEPS = False
+
 from osripper.generator import (
     Generator,
     create_bind_payload,
@@ -21,6 +28,7 @@ from osripper.generator import (
 class TestCompleteWorkflow:
     """Integration tests for complete payload generation workflows"""
     
+    @pytest.mark.skipif(not HAS_COMPILE_DEPS, reason="nuitka/sandboxed not installed")
     @patch('osripper.generator.obfuscator')
     @patch('subprocess.run')
     def test_bind_payload_full_workflow(self, mock_subprocess, mock_obfuscator):
@@ -87,6 +95,7 @@ class TestCompleteWorkflow:
             finally:
                 os.chdir(original_cwd)
     
+    @pytest.mark.skipif(not HAS_COMPILE_DEPS, reason="nuitka/sandboxed not installed")
     @patch('osripper.generator.obfuscator')
     @patch('subprocess.run')
     def test_reverse_ssl_payload_full_workflow(self, mock_subprocess, mock_obfuscator):
@@ -191,6 +200,7 @@ class TestCompleteWorkflow:
             finally:
                 os.chdir(original_cwd)
     
+    @pytest.mark.skipif(not HAS_COMPILE_DEPS, reason="nuitka/sandboxed not installed")
     @patch('subprocess.run')
     def test_compile_only_workflow(self, mock_subprocess):
         """Test workflow with compilation only (no obfuscation)"""
@@ -293,6 +303,7 @@ class TestErrorHandling:
             finally:
                 os.chdir(original_cwd)
     
+    @pytest.mark.skipif(not HAS_COMPILE_DEPS, reason="nuitka/sandboxed not installed")
     @patch('subprocess.run')
     def test_compilation_failure_handling(self, mock_subprocess):
         """Test handling when compilation fails"""
@@ -409,6 +420,7 @@ class TestFilesystemOperations:
             finally:
                 os.chdir(original_cwd)
     
+    @pytest.mark.skipif(not HAS_COMPILE_DEPS, reason="nuitka/sandboxed not installed")
     @patch('osripper.generator.obfuscator')
     @patch('subprocess.run')
     def test_temporary_workspace_cleanup(self, mock_subprocess, mock_obfuscator):
@@ -471,6 +483,7 @@ class TestFilesystemOperations:
 class TestWorkflowWithIcon:
     """Integration tests for workflows with custom icons"""
     
+    @pytest.mark.skipif(not HAS_COMPILE_DEPS, reason="nuitka/sandboxed not installed")
     @patch('subprocess.run')
     def test_compilation_with_icon(self, mock_subprocess):
         """Test compilation with custom icon file"""
