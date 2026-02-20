@@ -48,6 +48,7 @@ Examples:
   %(prog)s doh -d example.com                   # Create DoH C2 payload
   %(prog)s server example.com                   # Start C2 server
   %(prog)s server example.com --https           # Start C2 server with HTTPS
+  %(prog)s setup                                # Install optional deps (ngrok, compile)
   
   # Advanced options with obfuscation and compilation
   %(prog)s reverse -H 192.168.1.100 -p 4444 --obfuscate --enhanced --compile --icon app.ico --delay
@@ -155,6 +156,16 @@ For detailed help on a specific command, run:
     server_parser.add_argument('--key', help='Path to private key file (for HTTPS, auto-generated if not provided)')
     server_parser.add_argument('--debug', action='store_true', help='Enable Flask debug mode')
     
+    # Setup optional dependencies (pyngrok, nuitka, sandboxed)
+    setup_parser = subparsers.add_parser('setup',
+                                         help='Install optional dependencies (ngrok, binary compilation)',
+                                         description='Install optional Python packages required for ngrok tunnel listing and compiling payloads to binaries. Run this if you see "pip install" messages when using --ngrok or --compile.')
+    setup_group = setup_parser.add_mutually_exclusive_group()
+    setup_group.add_argument('--user', action='store_true',
+                             help='Install to user site (default)')
+    setup_group.add_argument('--system', action='store_true',
+                             help='Install system-wide (may require sudo)')
+    
     return parser
 
 def load_config(config_path):
@@ -194,7 +205,10 @@ def validate_args(args):
             print("[!] Invalid Bitcoin address format")
             return False
     
-    if args.command == 'server':
+    if args.command == 'setup':
+        # No extra validation needed
+        pass
+    elif args.command == 'server':
         # Validate server arguments
         if not (1024 <= args.port <= 65535):
             print("[!] Port must be between 1024 and 65535")
@@ -209,7 +223,7 @@ def validate_args(args):
             print("[!] Both --cert and --key must be provided together")
             return False
     
-    if args.icon and not os.path.isfile(args.icon):
+    if hasattr(args, 'icon') and args.icon and not os.path.isfile(args.icon):
         print("[!] Icon file not found")
         return False
     
@@ -494,8 +508,52 @@ def start_listener_if_needed(args):
         except Exception as e:
             print(f"[!] Failed to start listener: {e}")
 
+def execute_setup(args):
+    """Create OSRipper venv and install optional dependencies (avoids externally-managed env)."""
+    import subprocess
+    from .venv_helper import get_venv_dir, venv_exists, _venv_python
+
+    venv_dir = get_venv_dir()
+    if getattr(args, 'system', False):
+        # System-wide: use --user (may still hit externally-managed)
+        cmd = [sys.executable, "-m", "pip", "install", "--user",
+               "pyngrok", "nuitka", "sandboxed"]
+        print("[*] Installing optional dependencies (pyngrok, nuitka, sandboxed) to user site...")
+        print(f"[*] Running: {' '.join(cmd)}")
+    else:
+        # Create venv and install into it (recommended on Linux)
+        if not venv_exists():
+            print(f"[*] Creating venv at {venv_dir} ...")
+            result = subprocess.run([sys.executable, "-m", "venv", venv_dir])
+            if result.returncode != 0:
+                print("[!] Failed to create venv. Is venv installed? (python3-venv)")
+                return False
+        if os.name == "nt":
+            pip = os.path.join(venv_dir, "Scripts", "pip.exe")
+        else:
+            pip = os.path.join(venv_dir, "bin", "pip")
+            if not os.path.isfile(pip):
+                pip = os.path.join(venv_dir, "bin", "pip3")
+        cmd = [pip, "install", "pyngrok", "nuitka", "sandboxed"]
+        print("[*] Installing optional dependencies into OSRipper venv (pyngrok, nuitka, sandboxed)...")
+        print(f"[*] Running: {' '.join(cmd)}")
+    try:
+        result = subprocess.run(cmd)
+        if result.returncode == 0:
+            print("[+] Setup complete. You can now use --ngrok and --compile.")
+        else:
+            print("[!] Some packages may have failed. Try running the command above manually.")
+        return result.returncode == 0
+    except FileNotFoundError:
+        print("[!] pip not found. Install pip or run: python3 -m ensurepip")
+        return False
+
+
 def main_cli():
     """Main CLI entry point."""
+    from .venv_helper import ensure_venv_on_path
+    ensure_venv_on_path()  # so optional deps (ngrok, sandboxed) are found when not in system
+
     parser = create_parser()
     
     if len(sys.argv) == 1:
@@ -527,6 +585,11 @@ def main_cli():
         if not success:
             print("[!] Server failed to start")
         return
+    
+    # Handle setup (install optional deps)
+    if args.command == 'setup':
+        success = execute_setup(args)
+        sys.exit(0 if success else 1)
     
     # Show banner unless quiet
     if not args.quiet:

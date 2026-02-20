@@ -783,6 +783,27 @@ class Generator:
             print(f"[!] Obfuscation error: {e}")
             return False
     
+    def _check_compile_deps(self):
+        """Check Nuitka/sandboxed are available; tell user to run osripper-cli setup if not."""
+        from .venv_helper import get_venv_python
+        python = get_venv_python()
+        result = subprocess.run(
+            [python, "-m", "nuitka", "--version"],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            err = (result.stderr or result.stdout or "").lower()
+            if "no module named" in err or "nuitka" in err:
+                print("[!] Nuitka is not installed. Run: osripper-cli setup")
+            return False
+        try:
+            import sandboxed  # noqa: F401
+        except ImportError:
+            print("[!] The 'sandboxed' module is required for compilation. Run: osripper-cli setup")
+            return False
+        return True
+
     def compile(self):
         """
         Compile the payload to binary using Nuitka in the temp workspace.
@@ -791,6 +812,8 @@ class Generator:
             bool: True if successful, False otherwise
         """
         try:
+            if not self._check_compile_deps():
+                return False
             if not self._create_tmp_workspace():
                 return False
             
@@ -809,9 +832,11 @@ class Generator:
             # Get absolute paths
             source_abs = os.path.abspath(source)
             
-            # Build Nuitka command
+            # Build Nuitka command (use venv python if setup was run)
+            from .venv_helper import get_venv_python
+            python = get_venv_python()
             cmd_parts = [
-                sys.executable, "-m", "nuitka",
+                python, "-m", "nuitka",
                 "--standalone",
                 "--include-module=sandboxed",
                 "--disable-console",
@@ -876,7 +901,11 @@ class Generator:
                     return False
             else:
                 print("[!] Compilation failed")
-                print(f"[!] Error: {result.stderr[:500]}")  # Print first 500 chars
+                err = (result.stderr or result.stdout or "")
+                if "No module named" in err or "nuitka" in err:
+                    print("[!] Run: osripper-cli setup")
+                else:
+                    print(f"[!] Error: {err[:500]}")
                 return False
                 
         except Exception as e:

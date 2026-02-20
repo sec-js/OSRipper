@@ -8,6 +8,13 @@ import shutil
 from pathlib import Path
 from unittest.mock import patch, MagicMock, mock_open
 
+# Skip compilation tests when optional deps (nuitka/sandboxed) are not installed
+try:
+    import sandboxed  # noqa: F401
+    HAS_COMPILE_DEPS = True
+except ImportError:
+    HAS_COMPILE_DEPS = False
+
 from osripper.generator import (
     generate_random_string,
     create_bind_payload,
@@ -296,6 +303,7 @@ class TestGeneratorClass:
         assert result is False
         assert generator.obfuscated is False
     
+    @pytest.mark.skipif(not HAS_COMPILE_DEPS, reason="nuitka/sandboxed not installed (pip install nuitka sandboxed)")
     @patch('subprocess.run')
     def test_compile_success(self, mock_subprocess):
         """Test successful compilation"""
@@ -330,6 +338,7 @@ class TestGeneratorClass:
             if os.path.exists(generator.tmp_dir):
                 shutil.rmtree(generator.tmp_dir)
     
+    @pytest.mark.skipif(not HAS_COMPILE_DEPS, reason="nuitka/sandboxed not installed (pip install nuitka sandboxed)")
     @patch('subprocess.run')
     def test_compile_failure(self, mock_subprocess):
         """Test failed compilation"""
