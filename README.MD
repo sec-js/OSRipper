@@ -89,13 +89,14 @@ pip3 install -r requirements.txt
 pip3 install -e .
 ```
 
-**Optional dependencies (not in all distro repos):**  
-If you use **ngrok** tunnel listing, or **compile payloads to binaries** (Nuitka), install when the tool prompts you or beforehand:
+**Important — run setup for optional features (ngrok, binary compilation):**  
+On many systems (especially Linux with an externally-managed Python environment), you **must** run the built-in setup so optional dependencies are installed into OSRipper’s own venv. Do this once after installation:
 
 ```bash
-pip install pyngrok          # for ngrok tunnel info (e.g. get_tunnels)
-pip install nuitka sandboxed # for compiling payloads to standalone binaries
+osripper-cli setup
 ```
+
+This creates `~/.local/share/osripper/venv`, installs **pyngrok**, **nuitka**, and **sandboxed** there, and all later runs of `osripper` / `osripper-cli` will use them automatically. Without this, `--ngrok` and `--compile` will prompt you to run setup. Use `osripper-cli setup --system` only if you prefer a system/user pip install instead of the venv.
 
 ### Basic Usage
 

