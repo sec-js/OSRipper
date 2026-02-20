@@ -10,11 +10,8 @@ Build-Depends:
  python3-pytest,
  python3-requests,
  python3-yaml,
- python3-click,
  python3-psutil,
- python3-colorama,
  python3-flask,
- python3-dnspython,
  python3-cryptography,
 Standards-Version: 4.6.2
 Homepage: https://github.com/NoahOksuz/OSRipper
@@ -26,12 +23,11 @@ Package: osripper
 Architecture: all
 Depends:
  ${python3:Depends},
- python3-click,
  python3-requests,
  python3-yaml,
  python3-psutil,
- python3-colorama,
  python3-cryptography,
+ python3-flask,
  ${misc:Depends},
 Description: Advanced payload generator and crypter (FUD backdoors)
  OSRipper generates bind shells, reverse TCP payloads, and custom

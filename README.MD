@@ -89,6 +89,14 @@ pip3 install -r requirements.txt
 pip3 install -e .
 ```
 
+**Optional dependencies (not in all distro repos):**  
+If you use **ngrok** tunnel listing, or **compile payloads to binaries** (Nuitka), install when the tool prompts you or beforehand:
+
+```bash
+pip install pyngrok          # for ngrok tunnel info (e.g. get_tunnels)
+pip install nuitka sandboxed # for compiling payloads to standalone binaries
+```
+
 ### Basic Usage
 
 **Interactive Mode:**

@@ -454,10 +454,19 @@ if __name__ == "__main__":
     
     # Compile dropper
     try:
-        subprocess.run([
-            "python3", "-m", "nuitka", "--standalone", "--include-module=sandboxed",
-            "--disable-console", "--onefile", "--assume-yes-for-downloads", "dropper_or.py"
-        ], check=True)
+        result = subprocess.run(
+            [
+                "python3", "-m", "nuitka", "--standalone", "--include-module=sandboxed",
+                "--disable-console", "--onefile", "--assume-yes-for-downloads", "dropper_or.py"
+            ],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            err = (result.stderr or result.stdout or "")
+            if "No module named" in err or "nuitka" in err:
+                print("[!] Dropper compilation skipped: Nuitka not installed.")
+                print("    Install optional build dependencies with: pip install nuitka sandboxed")
     except Exception:
         pass
 

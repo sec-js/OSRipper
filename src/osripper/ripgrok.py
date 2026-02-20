@@ -1,4 +1,7 @@
-import ngrok
+try:
+    import ngrok
+except ImportError:
+    ngrok = None  # optional: pip install pyngrok
 
 #This isnt the official ngrok libary. This is merely my way to parse out the tunnel host and ip from the ngrok api
 #Subglitch1
@@ -19,7 +22,12 @@ def find_between_r( s, first, last ):
     except ValueError:
         return ""
 def get_tunnels():
-# construct the api client
+    if ngrok is None:
+        raise ImportError(
+            "ngrok support requires the 'pyngrok' package. Install it with:\n"
+            "  pip install pyngrok"
+        )
+    # construct the api client
     with open('creds', 'r') as credfile:
         ngrok_auth=credfile.readline()
     client = ngrok.Client(ngrok_auth)
