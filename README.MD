@@ -279,7 +279,7 @@ osripper-cli reverse --ngrok -p 4444 --obfuscate --compile
 
 ### Latest VirusTotal Scans
 
-- **Python Payload**: [0/68 Detection Rate](https://www.virustotal.com/gui/file/e7e654893cec4e1f1aa76e2bbfa4bb1e0c6a15adf19236845948877e93013aea)
+- **Python Payload**: [0/68 Detection Rate](https://www.virustotal.com/gui/file/73ed4742e536ae8d4631c54775acbf9ddbfda3a9fade32369be3a300a09d438c)
 - **Compiled Binary**: [0/68 Detection Rate](https://www.virustotal.com/gui/file-analysis/MjM2MTJiMjI3YTMzM2JjYzExMTJhMzhiMGY4ODQxZjA6MTcwMTcyOTE3MQ==)
 
 ### antiscan result
