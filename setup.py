@@ -18,7 +18,7 @@ def get_version():
             for line in f:
                 if line.startswith('__version__'):
                     return line.split('=')[1].strip().strip('"').strip("'")
-    return "0.3.2"
+    return "0.4.1"
 
 # Read requirements
 def get_requirements():

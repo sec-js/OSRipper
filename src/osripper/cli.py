@@ -509,18 +509,34 @@ def start_listener_if_needed(args):
             print(f"[!] Failed to start listener: {e}")
 
 def execute_setup(args):
-    """Install optional dependencies via pip."""
+    """Create OSRipper venv and install optional dependencies (avoids externally-managed env)."""
     import subprocess
-    packages = ["pyngrok", "nuitka", "sandboxed"]
-    cmd = [sys.executable, "-m", "pip", "install"]
+    from .venv_helper import get_venv_dir, venv_exists, _venv_python
+
+    venv_dir = get_venv_dir()
     if getattr(args, 'system', False):
-        pass  # system-wide
+        # System-wide: use --user (may still hit externally-managed)
+        cmd = [sys.executable, "-m", "pip", "install", "--user",
+               "pyngrok", "nuitka", "sandboxed"]
+        print("[*] Installing optional dependencies (pyngrok, nuitka, sandboxed) to user site...")
+        print(f"[*] Running: {' '.join(cmd)}")
     else:
-        # default: install to user site (no sudo)
-        cmd.append("--user")
-    cmd.extend(packages)
-    print("[*] Installing optional dependencies (pyngrok, nuitka, sandboxed)...")
-    print(f"[*] Running: {' '.join(cmd)}")
+        # Create venv and install into it (recommended on Linux)
+        if not venv_exists():
+            print(f"[*] Creating venv at {venv_dir} ...")
+            result = subprocess.run([sys.executable, "-m", "venv", venv_dir])
+            if result.returncode != 0:
+                print("[!] Failed to create venv. Is venv installed? (python3-venv)")
+                return False
+        if os.name == "nt":
+            pip = os.path.join(venv_dir, "Scripts", "pip.exe")
+        else:
+            pip = os.path.join(venv_dir, "bin", "pip")
+            if not os.path.isfile(pip):
+                pip = os.path.join(venv_dir, "bin", "pip3")
+        cmd = [pip, "install", "pyngrok", "nuitka", "sandboxed"]
+        print("[*] Installing optional dependencies into OSRipper venv (pyngrok, nuitka, sandboxed)...")
+        print(f"[*] Running: {' '.join(cmd)}")
     try:
         result = subprocess.run(cmd)
         if result.returncode == 0:
@@ -535,6 +551,9 @@ def execute_setup(args):
 
 def main_cli():
     """Main CLI entry point."""
+    from .venv_helper import ensure_venv_on_path
+    ensure_venv_on_path()  # so optional deps (ngrok, sandboxed) are found when not in system
+
     parser = create_parser()
     
     if len(sys.argv) == 1:

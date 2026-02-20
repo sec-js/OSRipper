@@ -784,23 +784,23 @@ class Generator:
             return False
     
     def _check_compile_deps(self):
-        """Check Nuitka/sandboxed are available; tell user to pip install if not."""
+        """Check Nuitka/sandboxed are available; tell user to run osripper-cli setup if not."""
+        from .venv_helper import get_venv_python
+        python = get_venv_python()
         result = subprocess.run(
-            [sys.executable, "-m", "nuitka", "--version"],
+            [python, "-m", "nuitka", "--version"],
             capture_output=True,
             text=True,
         )
         if result.returncode != 0:
             err = (result.stderr or result.stdout or "").lower()
             if "no module named" in err or "nuitka" in err:
-                print("[!] Nuitka is not installed. Install optional build dependencies with:")
-                print("    pip install nuitka sandboxed")
+                print("[!] Nuitka is not installed. Run: osripper-cli setup")
             return False
         try:
             import sandboxed  # noqa: F401
         except ImportError:
-            print("[!] The 'sandboxed' module is required for compilation. Install with:")
-            print("    pip install sandboxed")
+            print("[!] The 'sandboxed' module is required for compilation. Run: osripper-cli setup")
             return False
         return True
 
@@ -832,9 +832,11 @@ class Generator:
             # Get absolute paths
             source_abs = os.path.abspath(source)
             
-            # Build Nuitka command
+            # Build Nuitka command (use venv python if setup was run)
+            from .venv_helper import get_venv_python
+            python = get_venv_python()
             cmd_parts = [
-                sys.executable, "-m", "nuitka",
+                python, "-m", "nuitka",
                 "--standalone",
                 "--include-module=sandboxed",
                 "--disable-console",
@@ -901,8 +903,7 @@ class Generator:
                 print("[!] Compilation failed")
                 err = (result.stderr or result.stdout or "")
                 if "No module named" in err or "nuitka" in err:
-                    print("[!] Install optional build dependencies with:")
-                    print("    pip install nuitka sandboxed")
+                    print("[!] Run: osripper-cli setup")
                 else:
                     print(f"[!] Error: {err[:500]}")
                 return False
